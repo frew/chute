@@ -53,7 +53,7 @@ public class MySqlTableSchema {
 		return sb.toString();
 	}
 	
-	public static ArrayList<String> readTablesFromConn(java.sql.Connection conn, String database) throws SQLException {
+	public static ArrayList<String> readTablesFromConnection(java.sql.Connection conn, String database) throws SQLException {
 		ResultSet tableRS = conn.getMetaData().getTables(null, database, null, new String[]{"TABLE"});
 		ArrayList<String> tableNames = new ArrayList<String>();
 		while (tableRS.next()) {
@@ -63,7 +63,7 @@ public class MySqlTableSchema {
 		return tableNames;
 	}
 	
-	public static MySqlTableSchema readTableSchemaFromConn(java.sql.Connection conn, String database, String table) throws SQLException {
+	public static MySqlTableSchema readTableSchemaFromConnection(java.sql.Connection conn, String database, String table) throws SQLException {
 		ResultSet colRS = conn.getMetaData().getColumns(null, database, table, null);
 		ArrayList<MySqlColumnSchema> colSchemas = new ArrayList<MySqlColumnSchema>();
 		while (colRS.next()) {
@@ -110,10 +110,10 @@ public class MySqlTableSchema {
 	public static void main(String[] args) throws InstantiationException, IllegalAccessException, ClassNotFoundException, SQLException {
 		Class.forName("com.mysql.jdbc.Driver").newInstance();
 		Connection conn = DriverManager.getConnection("jdbc:mysql://localhost/chute_test", "root", "test");
-		List<String> tables = readTablesFromConn(conn, "chute_test");
+		List<String> tables = readTablesFromConnection(conn, "chute_test");
 		for (String table: tables) {
 			System.out.println("Got table: " + table);
-			MySqlTableSchema schema = readTableSchemaFromConn(conn, "chute_test", table);
+			MySqlTableSchema schema = readTableSchemaFromConnection(conn, "chute_test", table);
 			System.out.println("Schema: " + schema);
 		}
 	}
