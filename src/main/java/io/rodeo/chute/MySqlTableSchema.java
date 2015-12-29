@@ -42,12 +42,22 @@ public class MySqlTableSchema {
 		sb.append(".");
 		sb.append(tableName);
 		sb.append(", Cols: [");
+		boolean first = true;
 		for (MySqlColumnSchema col: columns) {
+			if (!first) {
+				sb.append(", ");
+			}
 			sb.append(col);
+			first = false;
 		}
-		sb.append("], PK:[");
+		sb.append("], PK: [");
+		first = true;
 		for (int offset: primaryKeyColumnOffsets) {
+			if (!first) {
+				sb.append(", ");
+			}
 			sb.append(columns[offset].getColumnName());
+			first = false;
 		}
 		sb.append("]");
 		return sb.toString();
@@ -68,10 +78,38 @@ public class MySqlTableSchema {
 		ArrayList<MySqlColumnSchema> colSchemas = new ArrayList<MySqlColumnSchema>();
 		while (colRS.next()) {
 			String colName = colRS.getString(4);
-			// String sqlType = colRS.getString(6);  // MySQL type namae - 5 is generic type name
+			String sqlType = colRS.getString(6);  // MySQL type name - 5 is generic type name
 			int colSize = colRS.getInt(7);
-			// TODO: Implement
-			MySqlColumnSchema schema = new MySqlColumnSchema(colName, ColumnType.INT, colSize);
+			ColumnType type = null;
+			switch (sqlType) {
+				case "TINYINT":
+					type = ColumnType.INT;
+					colSize = 1;
+					break;
+				case "SMALLINT":
+					type = ColumnType.INT;
+					colSize = 1;
+					break;
+				case "MEDIUMINT":
+					type = ColumnType.INT;
+					colSize = 1;
+					break;
+				case "INT":
+					type = ColumnType.INT;
+					colSize = 4;
+					break;
+				case "BIGINT":
+					type = ColumnType.INT;
+					colSize = 8;
+					break;
+				case "VARCHAR":
+					type = ColumnType.STRING;
+					// colSize is set from db above
+					break;
+				default:
+					throw new IllegalArgumentException("Unrecognized MySQL type: " + sqlType);
+			}
+			MySqlColumnSchema schema = new MySqlColumnSchema(colName, type, colSize);
 			colSchemas.add(schema);
 			// String defaultVal = colRS.getString(13);
 		}
