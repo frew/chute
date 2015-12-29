@@ -8,10 +8,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MySqlTableSchema {
-	private String databaseName;
-	private String tableName;
-	private MySqlColumnSchema[] columns;
-	private int[] primaryKeyColumnOffsets;
+	private final String databaseName;
+	private final String tableName;
+	private final MySqlColumnSchema[] columns;
+	private final int[] primaryKeyColumnOffsets;
 	
 	public MySqlTableSchema(String databaseName, String tableName, MySqlColumnSchema[] columns, int[] primaryKeyColumnOffsets) {
 		this.databaseName = databaseName;
