@@ -71,7 +71,7 @@ public class MySqlTableSchema {
 			// String sqlType = colRS.getString(6);  // MySQL type namae - 5 is generic type name
 			int colSize = colRS.getInt(7);
 			// TODO: Implement
-			MySqlColumnSchema schema = new MySqlColumnSchema(colName, ChuteType.INT, colSize);
+			MySqlColumnSchema schema = new MySqlColumnSchema(colName, ColumnType.INT, colSize);
 			colSchemas.add(schema);
 			// String defaultVal = colRS.getString(13);
 		}

@@ -1,6 +1,6 @@
 package io.rodeo.chute;
 
-public enum ChuteType {
+public enum ColumnType {
 	INT,
 	STRING
 }

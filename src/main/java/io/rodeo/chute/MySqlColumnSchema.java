@@ -2,10 +2,10 @@ package io.rodeo.chute;
 
 public class MySqlColumnSchema {
 	private final String columnName;
-	private final ChuteType columnType;
+	private final ColumnType columnType;
 	private final int columnLen;
 	
-	public MySqlColumnSchema(String name, ChuteType type, int len) {
+	public MySqlColumnSchema(String name, ColumnType type, int len) {
 		columnName = name;
 		columnType = type;
 		columnLen = len;
@@ -15,7 +15,7 @@ public class MySqlColumnSchema {
 		return columnName;
 	}
 
-	public ChuteType getColumnType() {
+	public ColumnType getColumnType() {
 		return columnType;
 	}
 
