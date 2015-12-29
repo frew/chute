@@ -7,84 +7,50 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MySqlSchema {
-	// Singleton
-	private MySqlSchema() {
+public class MySqlTableSchema {
+	private String databaseName;
+	private String tableName;
+	private MySqlColumnSchema[] columns;
+	private int[] primaryKeyColumnOffsets;
+	
+	public MySqlTableSchema(String databaseName, String tableName, MySqlColumnSchema[] columns, int[] primaryKeyColumnOffsets) {
+		this.databaseName = databaseName;
+		this.tableName = tableName;
+		this.columns = columns;
+		this.primaryKeyColumnOffsets = primaryKeyColumnOffsets;
+	}
+
+	public String getDatabaseName() {
+		return databaseName;
+	}
+
+	public String getTableName() {
+		return tableName;
+	}
+
+	public MySqlColumnSchema[] getColumns() {
+		return columns;
+	}
+
+	public int[] getPrimaryKeyColumnOffsets() {
+		return primaryKeyColumnOffsets;
 	}
 	
-	public static class MySqlColumnSchema {
-		private final String columnName;
-		private final ChuteType columnType;
-		private final int columnLen;
-		
-		public MySqlColumnSchema(String name, ChuteType type, int len) {
-			columnName = name;
-			columnType = type;
-			columnLen = len;
+	@Override public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append(databaseName);
+		sb.append(".");
+		sb.append(tableName);
+		sb.append(", Cols: [");
+		for (MySqlColumnSchema col: columns) {
+			sb.append(col);
 		}
-
-		public String getColumnName() {
-			return columnName;
+		sb.append("], PK:[");
+		for (int offset: primaryKeyColumnOffsets) {
+			sb.append(columns[offset].getColumnName());
 		}
-
-		public ChuteType getColumnType() {
-			return columnType;
-		}
-
-		public int getColumnLen() {
-			return columnLen;
-		}
-		
-		@Override public String toString() {
-			return columnName + " - " + columnType + "(" + columnLen +")";
-		}
-	}
-	
-	public static class MySqlTableSchema {
-		private String databaseName;
-		private String tableName;
-		private MySqlColumnSchema[] columns;
-		private int[] primaryKeyColumnOffsets;
-		
-		public MySqlTableSchema(String databaseName, String tableName, MySqlColumnSchema[] columns, int[] primaryKeyColumnOffsets) {
-			this.databaseName = databaseName;
-			this.tableName = tableName;
-			this.columns = columns;
-			this.primaryKeyColumnOffsets = primaryKeyColumnOffsets;
-		}
-
-		public String getDatabaseName() {
-			return databaseName;
-		}
-
-		public String getTableName() {
-			return tableName;
-		}
-
-		public MySqlColumnSchema[] getColumns() {
-			return columns;
-		}
-
-		public int[] getPrimaryKeyColumnOffsets() {
-			return primaryKeyColumnOffsets;
-		}
-		
-		@Override public String toString() {
-			StringBuilder sb = new StringBuilder();
-			sb.append(databaseName);
-			sb.append(".");
-			sb.append(tableName);
-			sb.append(", Cols: [");
-			for (MySqlColumnSchema col: columns) {
-				sb.append(col);
-			}
-			sb.append("], PK:[");
-			for (int offset: primaryKeyColumnOffsets) {
-				sb.append(columns[offset].getColumnName());
-			}
-			sb.append("]");
-			return sb.toString();
-		}
+		sb.append("]");
+		return sb.toString();
 	}
 	
 	public static ArrayList<String> readTablesFromConn(java.sql.Connection conn, String database) throws SQLException {
@@ -118,7 +84,7 @@ public class MySqlSchema {
 				String colName = indexRS.getString(9);
 				int i;
 				for (i = 0; i < colSchemas.size(); i++) {
-					if (colName.equals(colSchemas.get(i).columnName)) {
+					if (colName.equals(colSchemas.get(i).getColumnName())) {
 						primaryKeyIndexOffsets.add(i);
 						break;
 					}
