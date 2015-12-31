@@ -35,6 +35,49 @@ public class MySqlTableSchema {
 	public int[] getPrimaryKeyColumnOffsets() {
 		return primaryKeyColumnOffsets;
 	}
+
+	public String getCommaDelimitedPrimaryKeyColumns() {
+		StringBuilder sb = new StringBuilder();
+		boolean first = true;
+		for (int offset: primaryKeyColumnOffsets) {
+			if (!first) {
+				sb.append(", ");
+			}
+			sb.append(columns[offset].getColumnName());
+			first = false;
+		}
+		return sb.toString();
+	}
+
+	public String getCommaDelimitedAllColumns() {
+		StringBuilder sb = new StringBuilder();
+		boolean first = true;
+		for (MySqlColumnSchema column: columns) {
+			if (!first) {
+				sb.append(", ");
+			}
+			sb.append(column.getColumnName());
+			first = false;
+		}
+		return sb.toString();
+	}
+
+	protected String getParameterList(int count) {
+		StringBuilder sb = new StringBuilder();
+		boolean first = true;
+		for (int i = 0; i < count; i++) {
+			if (!first) {
+				sb.append(", ");
+			}
+			sb.append("?");
+			first = false;
+		}
+		return sb.toString();
+	}
+
+	public String getPrimaryKeyParameterList() {
+		return getParameterList(primaryKeyColumnOffsets.length);
+	}
 	
 	@Override public String toString() {
 		StringBuilder sb = new StringBuilder();
@@ -51,14 +94,7 @@ public class MySqlTableSchema {
 			first = false;
 		}
 		sb.append("], PK: [");
-		first = true;
-		for (int offset: primaryKeyColumnOffsets) {
-			if (!first) {
-				sb.append(", ");
-			}
-			sb.append(columns[offset].getColumnName());
-			first = false;
-		}
+		sb.append(getCommaDelimitedPrimaryKeyColumns());
 		sb.append("]");
 		return sb.toString();
 	}
