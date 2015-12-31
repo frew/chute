@@ -16,8 +16,6 @@ import com.github.shyiko.mysql.binlog.event.TableMapEventData;
 import com.github.shyiko.mysql.binlog.event.UpdateRowsEventData;
 import com.github.shyiko.mysql.binlog.event.WriteRowsEventData;
 
-// Figure out key partitioning strategy - COUNT DISTINCT vs COUNT vs something else
-
 public class MySqlIterativeImporter {
 	private BinaryLogFileReader reader;
 	
