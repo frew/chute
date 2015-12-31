@@ -18,10 +18,10 @@ import com.github.shyiko.mysql.binlog.event.WriteRowsEventData;
 
 // Figure out key partitioning strategy - COUNT DISTINCT vs COUNT vs something else
 
-public class MySqlImporter {
+public class MySqlIterativeImporter {
 	private BinaryLogFileReader reader;
 	
-	public MySqlImporter() {	
+	public MySqlIterativeImporter() {	
 	}
 		
 	public void open() throws IOException {
@@ -88,7 +88,7 @@ public class MySqlImporter {
 	}
 	
 	public static void main(String[] args) throws IOException {
-		MySqlImporter importer = new MySqlImporter();
+		MySqlIterativeImporter importer = new MySqlIterativeImporter();
 		importer.open();
 		while (true) {
 			importer.parseEvent(importer.readEvent());

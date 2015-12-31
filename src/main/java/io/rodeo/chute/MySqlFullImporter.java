@@ -8,7 +8,7 @@ import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class MySqlFullDumper {
+public class MySqlFullImporter {
 	private final MySqlTableSchema schema;
 	private int batchSize;
 
@@ -72,7 +72,7 @@ public class MySqlFullDumper {
 	private ConcurrentHashMap<Connection, PreparedStatements> preparedStatementsMap
 		= new ConcurrentHashMap<Connection, PreparedStatements>();
 
-	public MySqlFullDumper(MySqlTableSchema schema, int batchSize) {
+	public MySqlFullImporter(MySqlTableSchema schema, int batchSize) {
 		this.schema = schema;
 		this.batchSize = batchSize;
 	}
@@ -113,7 +113,7 @@ public class MySqlFullDumper {
 						, "root", "test");
 		MySqlTableSchema schema = MySqlTableSchema.readTableSchemaFromConnection(
 				conn, "chute_test", "testa");
-		MySqlFullDumper dumper = new MySqlFullDumper(schema, 2);
+		MySqlFullImporter dumper = new MySqlFullImporter(schema, 2);
 		Iterator<Object[]> splitIt = dumper.createSplitPointIterator(conn);
 		System.out.println("Splits:");
 		Object[] previousSplitPoint = null;
