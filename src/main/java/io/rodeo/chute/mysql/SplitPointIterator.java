@@ -1,12 +1,14 @@
 package io.rodeo.chute.mysql;
 
+import io.rodeo.chute.Key;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Iterator;
 
-public class SplitPointIterator implements Iterator<Object[]> {
+public class SplitPointIterator implements Iterator<Key> {
 	private int batchSize;
 
 	private PreparedStatement initialSplitStmt;
@@ -48,7 +50,7 @@ public class SplitPointIterator implements Iterator<Object[]> {
 	}
 
 	@Override
-	public Object[] next() {
+	public Key next() {
 		Object[] currentSplitPoint = nextSplitPoint;
 
 		try {
@@ -62,7 +64,7 @@ public class SplitPointIterator implements Iterator<Object[]> {
 			if (!rs.next()) {
 				done = true;
 				nextSplitPoint = null;
-				return currentSplitPoint;
+				return new Key(currentSplitPoint);
 			}
 
 			nextSplitPoint = new Object[currentSplitPoint.length];
@@ -71,7 +73,7 @@ public class SplitPointIterator implements Iterator<Object[]> {
 				nextSplitPoint[i] = rs.getObject(i + 1);
 			}
 
-			return currentSplitPoint;
+			return new Key(currentSplitPoint);
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}

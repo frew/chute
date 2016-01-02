@@ -1,10 +1,12 @@
 package io.rodeo.chute.mysql;
 
+import io.rodeo.chute.Row;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Iterator;
 
-public class ResultSetObjectArrayIterator implements Iterator<Object[]> {
+public class ResultSetObjectArrayIterator implements Iterator<Row> {
 	private final ResultSet resultSet;
 	private boolean done = false;
 
@@ -34,7 +36,7 @@ public class ResultSetObjectArrayIterator implements Iterator<Object[]> {
 	}
 
 	@Override
-	public Object[] next() {
+	public Row next() {
 		if (done) {
 			return null;
 		}
@@ -45,7 +47,7 @@ public class ResultSetObjectArrayIterator implements Iterator<Object[]> {
 				columnValues[i] = resultSet.getObject(i + 1);
 			}
 			iterate();
-			return columnValues;
+			return new Row(columnValues);
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}

@@ -1,13 +1,11 @@
-package io.rodeo.chute.mysql;
+package io.rodeo.chute;
 
-import io.rodeo.chute.ColumnType;
-
-public class MySqlColumnSchema {
+public class ColumnSchema {
 	private final String columnName;
 	private final ColumnType columnType;
 	private final int columnLen;
-	
-	public MySqlColumnSchema(String name, ColumnType type, int len) {
+
+	public ColumnSchema(String name, ColumnType type, int len) {
 		columnName = name;
 		columnType = type;
 		columnLen = len;
@@ -24,8 +22,9 @@ public class MySqlColumnSchema {
 	public int getColumnLen() {
 		return columnLen;
 	}
-	
-	@Override public String toString() {
-		return columnName + " - " + columnType + "(" + columnLen +")";
+
+	@Override
+	public String toString() {
+		return columnName + " - " + columnType + "(" + columnLen + ")";
 	}
 }

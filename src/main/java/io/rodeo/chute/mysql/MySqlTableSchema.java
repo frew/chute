@@ -1,6 +1,8 @@
 package io.rodeo.chute.mysql;
 
+import io.rodeo.chute.ColumnSchema;
 import io.rodeo.chute.ColumnType;
+import io.rodeo.chute.TableSchema;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -9,13 +11,13 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MySqlTableSchema {
+public class MySqlTableSchema implements TableSchema {
 	private final String databaseName;
 	private final String tableName;
-	private final MySqlColumnSchema[] columns;
+	private final ColumnSchema[] columns;
 	private final int[] primaryKeyColumnOffsets;
 	
-	public MySqlTableSchema(String databaseName, String tableName, MySqlColumnSchema[] columns, int[] primaryKeyColumnOffsets) {
+	public MySqlTableSchema(String databaseName, String tableName, ColumnSchema[] columns, int[] primaryKeyColumnOffsets) {
 		this.databaseName = databaseName;
 		this.tableName = tableName;
 		this.columns = columns;
@@ -30,10 +32,12 @@ public class MySqlTableSchema {
 		return tableName;
 	}
 
-	public MySqlColumnSchema[] getColumns() {
+	@Override
+	public ColumnSchema[] getColumns() {
 		return columns;
 	}
 
+	@Override
 	public int[] getPrimaryKeyColumnOffsets() {
 		return primaryKeyColumnOffsets;
 	}
@@ -54,7 +58,7 @@ public class MySqlTableSchema {
 	public String getCommaDelimitedAllColumns() {
 		StringBuilder sb = new StringBuilder();
 		boolean first = true;
-		for (MySqlColumnSchema column: columns) {
+		for (ColumnSchema column: columns) {
 			if (!first) {
 				sb.append(", ");
 			}
@@ -88,7 +92,7 @@ public class MySqlTableSchema {
 		sb.append(tableName);
 		sb.append(", Cols: [");
 		boolean first = true;
-		for (MySqlColumnSchema col: columns) {
+		for (ColumnSchema col: columns) {
 			if (!first) {
 				sb.append(", ");
 			}
@@ -113,7 +117,7 @@ public class MySqlTableSchema {
 	
 	public static MySqlTableSchema readTableSchemaFromConnection(java.sql.Connection conn, String database, String table) throws SQLException {
 		ResultSet colRS = conn.getMetaData().getColumns(null, database, table, null);
-		ArrayList<MySqlColumnSchema> colSchemas = new ArrayList<MySqlColumnSchema>();
+		ArrayList<ColumnSchema> colSchemas = new ArrayList<ColumnSchema>();
 		while (colRS.next()) {
 			String colName = colRS.getString(4);
 			String sqlType = colRS.getString(6);  // MySQL type name - 5 is generic type name
@@ -147,7 +151,7 @@ public class MySqlTableSchema {
 				default:
 					throw new IllegalArgumentException("Unrecognized MySQL type: " + sqlType);
 			}
-			MySqlColumnSchema schema = new MySqlColumnSchema(colName, type, colSize);
+			ColumnSchema schema = new ColumnSchema(colName, type, colSize);
 			colSchemas.add(schema);
 			// String defaultVal = colRS.getString(13);
 		}
@@ -172,7 +176,7 @@ public class MySqlTableSchema {
 				}
 			}
 		}
-		MySqlColumnSchema[] colSchemaArr = colSchemas.toArray(new MySqlColumnSchema[colSchemas.size()]);
+		ColumnSchema[] colSchemaArr = colSchemas.toArray(new ColumnSchema[colSchemas.size()]);
 		
 		int[] primaryKeyIndexOffsetArr = new int[primaryKeyIndexOffsets.size()];
 		for (int i = 0; i < primaryKeyIndexOffsets.size(); i++) {
