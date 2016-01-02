@@ -1,4 +1,6 @@
-package io.rodeo.chute;
+package io.rodeo.chute.mysql;
+
+import io.rodeo.chute.ColumnType;
 
 import java.sql.Connection;
 import java.sql.DriverManager;

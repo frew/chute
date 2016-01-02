@@ -1,4 +1,4 @@
-package io.rodeo.chute;
+package io.rodeo.chute.mysql;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
