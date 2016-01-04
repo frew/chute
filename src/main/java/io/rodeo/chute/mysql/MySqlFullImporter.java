@@ -15,7 +15,8 @@ public class MySqlFullImporter {
 	private final MySqlTableSchema schema;
 	private int batchSize;
 
-	private static void setStmtFromArray(PreparedStatement stmt, int startPosition, Object[] arr)
+	private static void fillPreparedStatementFromArray(
+			PreparedStatement stmt, int startPosition, Object[] arr)
 			throws SQLException {
 		for (int i = 0; i < arr.length; i++) {
 			stmt.setObject(startPosition + i, arr[i]);
@@ -58,14 +59,14 @@ public class MySqlFullImporter {
 				stmt = allRowsStmt;
 			} else if (startSplit == null) {
 				stmt = initialRowsStmt;
-				setStmtFromArray(stmt, 1, endSplit.getValues());
+				fillPreparedStatementFromArray(stmt, 1, endSplit.getValues());
 			} else if (endSplit == null) {
 				stmt = finalRowsStmt;
-				setStmtFromArray(stmt, 1, startSplit.getValues());
+				fillPreparedStatementFromArray(stmt, 1, startSplit.getValues());
 			} else {
 				stmt = rowsStmt;
-				setStmtFromArray(stmt, 1, startSplit.getValues());
-				setStmtFromArray(stmt, 1 + startSplit.getValues().length, endSplit.getValues());
+				fillPreparedStatementFromArray(stmt, 1, startSplit.getValues());
+				fillPreparedStatementFromArray(stmt, 1 + startSplit.getValues().length, endSplit.getValues());
 			}
 			ResultSet rs = stmt.executeQuery();
 			return new ResultSetObjectArrayIterator(rs);
@@ -94,7 +95,9 @@ public class MySqlFullImporter {
 		return ps.getRowsForSplit(startSplit, endSplit);
 	}
 
-	public static void main(String[] args) throws InstantiationException, IllegalAccessException, ClassNotFoundException, SQLException {
+	public static void main(String[] args)
+			throws InstantiationException, IllegalAccessException,
+			ClassNotFoundException, SQLException {
 		Class.forName("com.mysql.jdbc.Driver").newInstance();
 		Connection conn = DriverManager.getConnection(
 				"jdbc:mysql://localhost/chute_test"
