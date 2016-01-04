@@ -11,11 +11,7 @@ public class MySqlImportManager {
 		RUNNING,
 		DONE
 	}
-	
-	private static class MySqlBinaryLogPosition {
-		
-	}
-	
+
 	private class MySqlImportState {
 		public final MySqlTableSchema schema;
 		public final Map<Split, SplitFullImportState> fullImportStates;

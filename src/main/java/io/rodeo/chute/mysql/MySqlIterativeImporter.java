@@ -9,6 +9,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import com.github.shyiko.mysql.binlog.BinaryLogClient;
+import com.github.shyiko.mysql.binlog.BinaryLogClient.EventListener;
 import com.github.shyiko.mysql.binlog.BinaryLogFileReader;
 import com.github.shyiko.mysql.binlog.event.DeleteRowsEventData;
 import com.github.shyiko.mysql.binlog.event.Event;
@@ -16,46 +18,45 @@ import com.github.shyiko.mysql.binlog.event.TableMapEventData;
 import com.github.shyiko.mysql.binlog.event.UpdateRowsEventData;
 import com.github.shyiko.mysql.binlog.event.WriteRowsEventData;
 
-public class MySqlIterativeImporter {
-	private BinaryLogFileReader reader;
+public class MySqlIterativeImporter implements EventListener {
+	private final String host;
+	private final int port;
+	private final String user;
+	private final String password;
 	
-	public MySqlIterativeImporter() {	
-	}
-		
-	public void open() throws IOException {
-		File binLogFile = new File("/usr/local/mysql/data/mysql-bin.000001");
-		reader = new BinaryLogFileReader(binLogFile);
+	private BinaryLogClient client;
+	private MySqlBinaryLogPosition position;
+
+	public MySqlIterativeImporter(String host, int port, String user, String password,
+			MySqlBinaryLogPosition position) {
+		this.host = host;
+		this.port = port;
+		this.user = user;
+		this.password = password;
+		this.position = position;
 	}
 	
-	public Event readEvent() throws IOException {
-		try {
-			Event event = reader.readEvent();
-			if (event == null) {
-				throw new EOFException();
-			}
-			System.out.println(event);
-			return event;
-		} catch (IOException e) {
-			try {
-				reader.close();
-			} catch (IOException e1) {
-			}
-			throw e;
-		}
+	public void run() throws IOException {
+		client = new BinaryLogClient(host, port, user, password);
+		client.setBinlogFilename(position.getFilename());
+		client.setBinlogPosition(position.getOffset());
+		client.registerEventListener(this);
+		client.connect();
 	}
 	
 	private Map<Long, TableMapEventData> tableMap = new HashMap<Long, TableMapEventData>();
 	
-	private void processRowChange(Long tableId, BitSet includedColsBeforeUpdate, BitSet includedCols, Serializable[] oldRow, Serializable[] newRow) throws IOException {
+	private void processRowChange(Long tableId, BitSet includedColsBeforeUpdate, BitSet includedCols, Serializable[] oldRow, Serializable[] newRow) {
 		TableMapEventData tmEvent = tableMap.get(tableId);
 		if (tmEvent == null) {
-			throw new IOException("No table map entry for " + tableId);
+			throw new IllegalStateException("No table map entry for " + tableId);
 		}
 		String database = tmEvent.getDatabase();
 		String table = tmEvent.getTable();
 	}
 	
-	public void parseEvent(Event event) throws IOException {
+	@Override
+	public void onEvent(Event event) {
 		switch (event.getHeader().getEventType()) {
 		case EXT_WRITE_ROWS:
 			WriteRowsEventData wrEvent = (WriteRowsEventData) event.getData();
@@ -86,10 +87,9 @@ public class MySqlIterativeImporter {
 	}
 	
 	public static void main(String[] args) throws IOException {
-		MySqlIterativeImporter importer = new MySqlIterativeImporter();
-		importer.open();
-		while (true) {
-			importer.parseEvent(importer.readEvent());
-		}
+		MySqlBinaryLogPosition pos = new MySqlBinaryLogPosition();
+		MySqlIterativeImporter importer = new MySqlIterativeImporter(
+				"localhost", 3306, "root", "test", pos);
+		importer.run();
 	}
 }
