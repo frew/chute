@@ -4,6 +4,9 @@ import io.rodeo.chute.Row;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Map;
@@ -25,34 +28,65 @@ public class MySqlIterativeImporter implements EventListener {
 
 	private BinaryLogClient client;
 	private MySqlBinaryLogPosition position;
+	private Connection schemaConn;
 
 	public MySqlIterativeImporter(String host, int port, String user, String password,
-			MySqlBinaryLogPosition position) {
+			MySqlBinaryLogPosition position, Connection schemaConn) {
 		this.host = host;
 		this.port = port;
 		this.user = user;
 		this.password = password;
 		this.position = position;
+		this.schemaConn = schemaConn;
 	}
 
 	public void run() throws IOException {
 		client = new BinaryLogClient(host, port, user, password);
+		// TODO: GTID support
 		client.setBinlogFilename(position.getFilename());
 		client.setBinlogPosition(position.getOffset());
 		client.registerEventListener(this);
 		client.connect();
 	}
 
-	private Map<Long, TableMapEventData> tableMap = new HashMap<Long, TableMapEventData>();
+	// Map from table ID to schema
+	private Map<Long, MySqlTableSchema> schemaMap = new HashMap<Long, MySqlTableSchema>();
 
-	private void processRowChange(Long tableId, BitSet includedColsBeforeUpdate, BitSet includedCols, Row oldRow, Row newRow) {
-		TableMapEventData tmEvent = tableMap.get(tableId);
-		if (tmEvent == null) {
-			// TODO: Where do exceptions in the event loop go?
-			throw new IllegalStateException("No table map entry for " + tableId);
+	private void coerceLogRowTypes(MySqlTableSchema schema, Row logRow) {
+		if (logRow == null) {
+			return;
 		}
-		String database = tmEvent.getDatabase();
-		String table = tmEvent.getTable();
+		
+		Object[] values = logRow.getValues();
+		if (schema.getColumns().length != values.length) {
+			throw new RuntimeException("Schema length doesn't match row length");
+		}
+		for (int i = 0; i < values.length; i++) {
+			switch (schema.getColumns()[i].getColumnType()) {
+			case INT:
+				// TODO: Do we need to do coercion within integral types?
+				break;
+			case STRING:
+				if (!(values[i] instanceof byte[])) {
+					throw new RuntimeException("Expected string to be represented as a byte array");
+				}
+				// TODO: Character sets and stuff
+				values[i] = new String((byte[]) values[i]);
+				break;
+			default:
+				throw new RuntimeException("Unknown schema type: " + schema.getColumns()[i].getColumnType());
+			}
+		}
+	}
+	
+	private void processRowChange(Long tableId, BitSet includedColsBeforeUpdate, BitSet includedCols, Row oldRow, Row newRow) {
+		MySqlTableSchema schema = schemaMap.get(tableId);
+		if (schema == null) {
+			// TODO: Where do exceptions in the event loop go?
+			throw new IllegalStateException("No table schema entry for " + tableId);
+		}
+		String database = schema.getDatabaseName();
+		String table = schema.getTableName();
 
 		// Enforce that all of the row is there or not.
 		// This is default in MySQL.
@@ -65,7 +99,8 @@ public class MySqlIterativeImporter implements EventListener {
 				&& includedCols.cardinality() != includedCols.length()) {
 			throw new IllegalStateException("Expected all columns to be included");
 		}
-
+		coerceLogRowTypes(schema, oldRow);
+		coerceLogRowTypes(schema, newRow);
 
 		System.out.println("RC " + database + "." + table + " -> " + oldRow + " : " + newRow);
 	}
@@ -93,10 +128,22 @@ public class MySqlIterativeImporter implements EventListener {
 			break;
 		case TABLE_MAP:
 			TableMapEventData tmData = (TableMapEventData) event.getData();
-			if (!tableMap.containsKey(tmData.getTableId())) {
-				System.out.println("Adding table map data for " + tmData.getTableId() + " -> " + tmData.getTable());
+			if (!schemaMap.containsKey(tmData.getTableId())) {
+				MySqlTableSchema schema;
+				try {
+					schema = MySqlTableSchema.readTableSchemaFromConnection(schemaConn, tmData.getDatabase(), tmData.getTable());
+				} catch (SQLException e) {
+					throw new RuntimeException(e);
+				}
+				
+				// TODO: Check column types vs. schema
+				if (schema.getColumns().length != tmData.getColumnTypes().length) {
+					throw new RuntimeException("Got table map event " + tmData + " that doesn't match retrieved schema " + schema);
+				}
+				
+				System.out.println("Adding schema map data for " + tmData.getTableId() + " -> " + schema);
+				schemaMap.put(tmData.getTableId(), schema);
 			}
-			tableMap.put(tmData.getTableId(), tmData);
 			break;
 		default:
 			// System.out.println("Not handling " + event);
@@ -104,10 +151,16 @@ public class MySqlIterativeImporter implements EventListener {
 		}
 	}
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, SQLException, InstantiationException, IllegalAccessException, ClassNotFoundException {
+		Class.forName("com.mysql.jdbc.Driver").newInstance();
+		Connection conn = DriverManager.getConnection(
+				"jdbc:mysql://localhost/chute_test"
+				// + "?profileSQL=true"
+				, "root", "test");
+		
 		MySqlBinaryLogPosition pos = new MySqlBinaryLogPosition();
 		MySqlIterativeImporter importer = new MySqlIterativeImporter(
-				"localhost", 3306, "root", "test", pos);
+				"localhost", 3306, "root", "test", pos, conn);
 		importer.run();
 	}
 }
