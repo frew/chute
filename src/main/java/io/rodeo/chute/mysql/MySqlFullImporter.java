@@ -2,6 +2,9 @@ package io.rodeo.chute.mysql;
 
 import io.rodeo.chute.Key;
 import io.rodeo.chute.Row;
+import io.rodeo.chute.Split;
+import io.rodeo.chute.StreamPosition;
+import io.rodeo.chute.StreamProcessor;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -12,12 +15,9 @@ import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class MySqlFullImporter {
-	private final MySqlTableSchema schema;
-	private int batchSize;
-
 	private static void fillPreparedStatementFromArray(
 			PreparedStatement stmt, int startPosition, Object[] arr)
-			throws SQLException {
+					throws SQLException {
 		for (int i = 0; i < arr.length; i++) {
 			stmt.setObject(startPosition + i, arr[i]);
 		}
@@ -73,8 +73,11 @@ public class MySqlFullImporter {
 		}
 	}
 
-	private ConcurrentHashMap<Connection, PreparedStatements> preparedStatementsMap
-		= new ConcurrentHashMap<Connection, PreparedStatements>();
+	private static final ConcurrentHashMap<Connection, PreparedStatements> preparedStatementsMap
+	= new ConcurrentHashMap<Connection, PreparedStatements>();
+
+	private final MySqlTableSchema schema;
+	private int batchSize;
 
 	public MySqlFullImporter(MySqlTableSchema schema, int batchSize) {
 		this.schema = schema;
@@ -85,20 +88,57 @@ public class MySqlFullImporter {
 		return new SplitPointIterator(schema, batchSize, conn);
 	}
 
-	public Iterator<Row> getRowsForSplit(Connection conn, Key startSplit, Key endSplit)
-			throws SQLException {
-		PreparedStatements ps = preparedStatementsMap.get(conn);
-		if (ps == null) {
-			ps = new PreparedStatements(conn);
-			preparedStatementsMap.put(conn, ps);
+	public class FullImporterRunnable implements Runnable {
+		private final Connection conn;
+		private final Split split;
+		private final StreamProcessor processor;
+		private final Runnable cb;
+
+		public FullImporterRunnable(Connection conn, Split split, StreamProcessor processor, Runnable cb) {
+			this.conn = conn;
+			this.split = split;
+			this.processor = processor;
+			this.cb = cb;
 		}
-		return ps.getRowsForSplit(startSplit, endSplit);
+
+		public Iterator<Row> getRowsForSplit()
+				throws SQLException {
+			PreparedStatements ps = preparedStatementsMap.get(conn);
+			if (ps == null) {
+				ps = new PreparedStatements(conn);
+				preparedStatementsMap.put(conn, ps);
+			}
+			return ps.getRowsForSplit(split.getStartKey(), split.getEndKey());
+		}
+
+		@Override
+		public void run() {
+			StreamPosition pos = new MySqlStreamPosition(true);
+			Iterator<Row> rowIt;
+			try {
+				rowIt = getRowsForSplit();
+
+				while (rowIt.hasNext()) {
+					Row row = rowIt.next();
+					processor.process(schema, null, row, pos);
+				}
+			} catch (SQLException e) {
+				// TODO: Less disruptive handling
+				e.printStackTrace();
+				System.exit(1);
+			}
+			cb.run();
+		}
+	}
+
+	public FullImporterRunnable createImporterRunnable(Connection conn, Split split, StreamProcessor processor, Runnable cb) {
+		return new FullImporterRunnable(conn, split, processor, cb);
 	}
 
 	public static void main(String[] args)
 			throws InstantiationException, IllegalAccessException,
 			ClassNotFoundException, SQLException {
-		Class.forName("com.mysql.jdbc.Driver").newInstance();
+		/* Class.forName("com.mysql.jdbc.Driver").newInstance();
 		Connection conn = DriverManager.getConnection(
 				"jdbc:mysql://localhost/chute_test"
 				// + "?profileSQL=true"
@@ -113,7 +153,7 @@ public class MySqlFullImporter {
 			Key splitPoint = splitIt.next();
 			System.out.println("End key: " + splitPoint);
 			System.out.println("In split:");
-			Iterator<Row> rowIt = dumper.getRowsForSplit(conn, previousSplitPoint, splitPoint);
+			Iterator<Row> rowIt = dumper.getRowsForSplit(conn, new Split(previousSplitPoint, splitPoint));
 			while (rowIt.hasNext()) {
 				Row row = rowIt.next();
 				System.out.println("> " + row);
@@ -122,10 +162,10 @@ public class MySqlFullImporter {
 		}
 		System.out.println("Final: ");
 		System.out.println("In split:");
-		Iterator<Row> rowIt = dumper.getRowsForSplit(conn, previousSplitPoint, null);
+		Iterator<Row> rowIt = dumper.getRowsForSplit(conn, new Split(previousSplitPoint, null));
 		while (rowIt.hasNext()) {
 			Row row = rowIt.next();
 			System.out.println("> " + row);
-		}
+		} */
 	}
 }
