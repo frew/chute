@@ -1,6 +1,8 @@
 package io.rodeo.chute.mysql;
 
+import io.rodeo.chute.PrintingStreamProcessor;
 import io.rodeo.chute.Row;
+import io.rodeo.chute.StreamProcessor;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -20,33 +22,41 @@ import com.github.shyiko.mysql.binlog.event.TableMapEventData;
 import com.github.shyiko.mysql.binlog.event.UpdateRowsEventData;
 import com.github.shyiko.mysql.binlog.event.WriteRowsEventData;
 
-public class MySqlIterativeImporter implements EventListener {
+public class MySqlIterativeImporter implements EventListener, Runnable {
 	private final String host;
 	private final int port;
 	private final String user;
 	private final String password;
 
 	private BinaryLogClient client;
-	private MySqlBinaryLogPosition position;
+	private MySqlStreamPosition position;
 	private Connection schemaConn;
+	private StreamProcessor processor;
 
 	public MySqlIterativeImporter(String host, int port, String user, String password,
-			MySqlBinaryLogPosition position, Connection schemaConn) {
+			MySqlStreamPosition position, Connection schemaConn, StreamProcessor processor) {
 		this.host = host;
 		this.port = port;
 		this.user = user;
 		this.password = password;
 		this.position = position;
 		this.schemaConn = schemaConn;
+		this.processor = processor;
 	}
 
-	public void run() throws IOException {
+	@Override
+	public void run() {
 		client = new BinaryLogClient(host, port, user, password);
 		// TODO: GTID support
 		client.setBinlogFilename(position.getFilename());
 		client.setBinlogPosition(position.getOffset());
 		client.registerEventListener(this);
-		client.connect();
+		try {
+			client.connect();
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
 	}
 
 	// Map from table ID to schema
@@ -102,7 +112,8 @@ public class MySqlIterativeImporter implements EventListener {
 		coerceLogRowTypes(schema, oldRow);
 		coerceLogRowTypes(schema, newRow);
 
-		System.out.println("RC " + database + "." + table + " -> " + oldRow + " : " + newRow);
+		processor.process(schema, oldRow, newRow, new MySqlStreamPosition(client.getBinlogFilename(), client.getBinlogPosition()));
+		// System.out.println("RC " + database + "." + table + " -> " + oldRow + " : " + newRow);
 	}
 
 	@Override
@@ -158,9 +169,9 @@ public class MySqlIterativeImporter implements EventListener {
 				// + "?profileSQL=true"
 				, "root", "test");
 		
-		MySqlBinaryLogPosition pos = new MySqlBinaryLogPosition();
+		MySqlStreamPosition pos = new MySqlStreamPosition(false);
 		MySqlIterativeImporter importer = new MySqlIterativeImporter(
-				"localhost", 3306, "root", "test", pos, conn);
+				"localhost", 3306, "root", "test", pos, conn, new PrintingStreamProcessor());
 		importer.run();
 	}
 }
