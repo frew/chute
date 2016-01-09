@@ -66,7 +66,7 @@ public class MySqlIterativeImporter implements EventListener, Runnable {
 		if (logRow == null) {
 			return;
 		}
-		
+
 		Object[] values = logRow.getValues();
 		if (schema.getColumns().length != values.length) {
 			throw new RuntimeException("Schema length doesn't match row length");
@@ -88,7 +88,7 @@ public class MySqlIterativeImporter implements EventListener, Runnable {
 			}
 		}
 	}
-	
+
 	private void processRowChange(Long tableId, BitSet includedColsBeforeUpdate, BitSet includedCols, Row oldRow, Row newRow) {
 		MySqlTableSchema schema = schemaMap.get(tableId);
 		if (schema == null) {
@@ -146,12 +146,12 @@ public class MySqlIterativeImporter implements EventListener, Runnable {
 				} catch (SQLException e) {
 					throw new RuntimeException(e);
 				}
-				
+
 				// TODO: Check column types vs. schema
 				if (schema.getColumns().length != tmData.getColumnTypes().length) {
 					throw new RuntimeException("Got table map event " + tmData + " that doesn't match retrieved schema " + schema);
 				}
-				
+
 				System.out.println("Adding schema map data for " + tmData.getTableId() + " -> " + schema);
 				schemaMap.put(tmData.getTableId(), schema);
 			}
@@ -168,7 +168,7 @@ public class MySqlIterativeImporter implements EventListener, Runnable {
 				"jdbc:mysql://localhost/chute_test"
 				// + "?profileSQL=true"
 				, "root", "test");
-		
+
 		MySqlStreamPosition pos = new MySqlStreamPosition(false);
 		MySqlIterativeImporter importer = new MySqlIterativeImporter(
 				"localhost", 3306, "root", "test", pos, conn, new PrintingStreamProcessor());
