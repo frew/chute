@@ -28,6 +28,11 @@ import io.rodeo.chute.StreamPosition;
  *   The epoch is an integer that's incremented every time the
  *   master changes. The filename and offset are recorded as shown in
  *   "SHOW MASTER STATUS".
+ * - A backfill position of the form
+ *   (epoch, "", 0)
+ *   Note that in addition to the lack of filename, legitimate replication
+ *   positions start at 4, so the offset can be used to differentiate
+ *   as well.
  *
  * TODO: Currently we don't support GTID yet.
  */
