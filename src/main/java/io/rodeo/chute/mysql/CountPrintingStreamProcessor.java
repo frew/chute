@@ -36,9 +36,12 @@ public class CountPrintingStreamProcessor implements StreamProcessor {
 	public void process(TableSchema schema, Row oldRow, Row newRow,
 			StreamPosition pos) {
 		MySqlTableSchema mySqlSchema = (MySqlTableSchema) schema;
-		String key = mySqlSchema.getDatabaseName() + "."
-				+ mySqlSchema.getTableName() + "-"
-				+ (pos.isBackfill() ? "backfill" : "iterative");
+		String key = mySqlSchema.getDatabaseName()
+				+ "."
+				+ mySqlSchema.getTableName()
+				+ "-"
+				+ ((pos instanceof MySqlStreamPosition && ((MySqlStreamPosition) pos)
+						.getOffset() == 0) ? "backfill" : "iterative");
 
 		// Yeah, there's a race here, but we don't need exact counts
 		Integer val = countMap.get(key);

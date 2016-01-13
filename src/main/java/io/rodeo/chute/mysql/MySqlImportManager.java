@@ -43,6 +43,7 @@ public class MySqlImportManager {
 
 	private final ConnectionManager connManager;
 	private final StreamProcessor processor;
+	private final int epoch;
 	private final List<MySqlFullTableImportManager> fullImportManagers;
 
 	private class MySqlFullTableImportManager implements Runnable {
@@ -98,7 +99,7 @@ public class MySqlImportManager {
 		}
 
 		private void startFullImport(final Split split, final Connection conn,
-				StreamProcessor processor) throws SQLException {
+				final int epoch, StreamProcessor processor) throws SQLException {
 			setFullImportRunning(split);
 			Runnable doneCb = new Runnable() {
 				@Override
@@ -112,7 +113,7 @@ public class MySqlImportManager {
 					setFullImportDone(split);
 				}
 			};
-			Runnable r = importer.createImporterRunnable(conn, split,
+			Runnable r = importer.createImporterRunnable(conn, epoch, split,
 					processor, doneCb);
 			new Thread(r).start();
 		}
@@ -127,7 +128,7 @@ public class MySqlImportManager {
 
 				while ((split = getSplitToRun()) != null) {
 					Connection conn = connManager.createConnection();
-					startFullImport(split, conn, processor);
+					startFullImport(split, conn, epoch, processor);
 				}
 			} catch (SQLException e) {
 				e.printStackTrace();
@@ -137,9 +138,10 @@ public class MySqlImportManager {
 	}
 
 	public MySqlImportManager(List<MySqlTableSchema> schemas,
-			StreamProcessor processor, ConnectionManager connManager) {
+			StreamProcessor processor, int epoch, ConnectionManager connManager) {
 		this.fullImportManagers = new ArrayList<MySqlFullTableImportManager>();
 		this.processor = processor;
+		this.epoch = epoch;
 		this.connManager = connManager;
 		for (MySqlTableSchema schema : schemas) {
 			this.fullImportManagers.add(new MySqlFullTableImportManager(schema,
@@ -150,7 +152,7 @@ public class MySqlImportManager {
 
 	public void start() throws SQLException {
 		Connection itConn = connManager.createConnection();
-		MySqlStreamPosition pos = new MySqlStreamPosition(false);
+		MySqlStreamPosition pos = new MySqlStreamPosition(epoch, "", 4);
 		MySqlIterativeImporter importer = new MySqlIterativeImporter(
 				"localhost", 3306, "root", "test", pos, itConn, processor);
 		new Thread(importer).start();
@@ -171,8 +173,9 @@ public class MySqlImportManager {
 					schemaConn, "chute_test", tableName));
 		}
 		StreamProcessor processor = new CountPrintingStreamProcessor(1000);
+		int currentEpoch = 0;
 		MySqlImportManager manager = new MySqlImportManager(schemas, processor,
-				connManager);
+				currentEpoch, connManager);
 		manager.start();
 		System.out.println("Importers started");
 	}

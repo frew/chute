@@ -111,6 +111,9 @@ public class MySqlIterativeImporter implements EventListener, Runnable {
 	private void processRowChange(Long tableId,
 			BitSet includedColsBeforeUpdate, BitSet includedCols, Row oldRow,
 			Row newRow) {
+		position.setFilename(client.getBinlogFilename());
+		position.setOffset(client.getBinlogPosition());
+
 		MySqlTableSchema schema = schemaMap.get(tableId);
 		if (schema == null) {
 			// TODO: Where do exceptions in the event loop go?
@@ -137,8 +140,7 @@ public class MySqlIterativeImporter implements EventListener, Runnable {
 		coerceLogRowTypes(schema, oldRow);
 		coerceLogRowTypes(schema, newRow);
 
-		processor.process(schema, oldRow, newRow, new MySqlStreamPosition(
-				client.getBinlogFilename(), client.getBinlogPosition()));
+		processor.process(schema, oldRow, newRow, position);
 		// System.out.println("RC " + database + "." + table + " -> " + oldRow +
 		// " : " + newRow);
 	}
@@ -209,7 +211,7 @@ public class MySqlIterativeImporter implements EventListener, Runnable {
 				// + "?profileSQL=true"
 				, "root", "test");
 
-		MySqlStreamPosition pos = new MySqlStreamPosition(false);
+		MySqlStreamPosition pos = new MySqlStreamPosition(0, "", 4);
 		MySqlIterativeImporter importer = new MySqlIterativeImporter(
 				"localhost", 3306, "root", "test", pos, conn,
 				new PrintingStreamProcessor());

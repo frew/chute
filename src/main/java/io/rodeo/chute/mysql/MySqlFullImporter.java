@@ -106,13 +106,15 @@ public class MySqlFullImporter {
 
 	public class FullImporterRunnable implements Runnable {
 		private final Connection conn;
+		private final int epoch;
 		private final Split split;
 		private final StreamProcessor processor;
 		private final Runnable cb;
 
-		public FullImporterRunnable(Connection conn, Split split,
+		public FullImporterRunnable(Connection conn, int epoch, Split split,
 				StreamProcessor processor, Runnable cb) {
 			this.conn = conn;
+			this.epoch = epoch;
 			this.split = split;
 			this.processor = processor;
 			this.cb = cb;
@@ -129,7 +131,7 @@ public class MySqlFullImporter {
 
 		@Override
 		public void run() {
-			StreamPosition pos = new MySqlStreamPosition(true);
+			StreamPosition pos = new MySqlStreamPosition(this.epoch, "", 0);
 			Iterator<Row> rowIt;
 			try {
 				rowIt = getRowsForSplit();
@@ -148,7 +150,7 @@ public class MySqlFullImporter {
 	}
 
 	public FullImporterRunnable createImporterRunnable(Connection conn,
-			Split split, StreamProcessor processor, Runnable cb) {
-		return new FullImporterRunnable(conn, split, processor, cb);
+			int epoch, Split split, StreamProcessor processor, Runnable cb) {
+		return new FullImporterRunnable(conn, epoch, split, processor, cb);
 	}
 }

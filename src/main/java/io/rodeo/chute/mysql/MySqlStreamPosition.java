@@ -16,40 +16,60 @@ package io.rodeo.chute.mysql;
  limitations under the License.
  */
 
+import java.nio.ByteBuffer;
+
 import io.rodeo.chute.StreamPosition;
 
-// TODO: gtid
+/*-
+ * Represents a position in the replication stream. For MySQL there are
+ * currently two possible kinds of positions:
+ * - An iterative position in the replication stream of the form
+ *   (epoch, filename, offset)
+ *   The epoch is an integer that's incremented every time the
+ *   master changes. The filename and offset are recorded as shown in
+ *   "SHOW MASTER STATUS".
+ *
+ * TODO: Currently we don't support GTID yet.
+ */
 public class MySqlStreamPosition implements StreamPosition {
-	private final boolean backfill;
+	// Incremented each time the server is changed
+	private int epoch;
+
 	private String filename;
 	private long offset;
 
-	public MySqlStreamPosition(boolean backfill) {
-		this.backfill = backfill;
-		if (backfill) {
-			this.filename = null;
-			this.offset = -1;
-		} else {
-			this.filename = "";
-			this.offset = 4;
-		}
-	}
-
-	public MySqlStreamPosition(String filename, long offset) {
-		this.backfill = false;
+	public MySqlStreamPosition(int epoch, String filename, long offset) {
+		this.epoch = epoch;
 		this.filename = filename;
 		this.offset = offset;
 	}
 
-	@Override
-	public boolean isBackfill() {
-		return this.backfill;
+	public MySqlStreamPosition(byte[] positionBytes) {
+		if (positionBytes.length < 12) {
+			throw new IllegalArgumentException(
+					"MySQL position must be at least 16 bytes, but was "
+							+ positionBytes.length);
+		}
+		ByteBuffer buf = ByteBuffer.wrap(positionBytes);
+		this.epoch = buf.getInt();
+		byte[] stringBytes = new byte[buf.remaining() - 8];
+		buf.get(stringBytes);
+		this.filename = new String(stringBytes);
+		this.offset = buf.getLong();
 	}
 
 	@Override
-	public String getPosition() {
-		// TODO: Figure out formatting
-		return "";
+	public byte[] getPosition() {
+		byte[] fileBytes = filename.getBytes();
+		int positionLength = 4 + fileBytes.length + 8;
+		ByteBuffer buf = ByteBuffer.allocate(positionLength);
+		buf.putInt(epoch);
+		buf.put(fileBytes);
+		buf.putLong(offset);
+		byte[] retArray = new byte[positionLength];
+		buf.flip();
+		buf.get(retArray);
+		return retArray;
 	}
 
 	public void setFilename(String filename) {
@@ -66,5 +86,11 @@ public class MySqlStreamPosition implements StreamPosition {
 
 	public long getOffset() {
 		return offset;
+	}
+
+	@Override
+	public String toString() {
+		return "MySqlStreamPosition: (" + epoch + ":" + filename + ":" + offset
+				+ ")";
 	}
 }
