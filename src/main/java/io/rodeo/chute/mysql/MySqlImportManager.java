@@ -17,12 +17,10 @@ limitations under the License.
  */
 
 import io.rodeo.chute.Key;
-import io.rodeo.chute.PrintingStreamProcessor;
-import io.rodeo.chute.StreamProcessor;
 import io.rodeo.chute.Split;
+import io.rodeo.chute.StreamProcessor;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
