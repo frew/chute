@@ -17,6 +17,7 @@ limitations under the License.
  */
 
 public enum ColumnType {
+	FLOAT,
 	INT,
-	STRING
+	STRING,
 }
