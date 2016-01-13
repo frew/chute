@@ -1,19 +1,19 @@
 package io.rodeo.chute.mysql;
 
 /*
-Copyright 2016 Fred Wulff
+ Copyright 2016 Fred Wulff
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+ http://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
  */
 
 import io.rodeo.chute.PrintingStreamProcessor;
@@ -49,8 +49,9 @@ public class MySqlIterativeImporter implements EventListener, Runnable {
 	private Connection schemaConn;
 	private StreamProcessor processor;
 
-	public MySqlIterativeImporter(String host, int port, String user, String password,
-			MySqlStreamPosition position, Connection schemaConn, StreamProcessor processor) {
+	public MySqlIterativeImporter(String host, int port, String user,
+			String password, MySqlStreamPosition position,
+			Connection schemaConn, StreamProcessor processor) {
 		this.host = host;
 		this.port = port;
 		this.user = user;
@@ -94,22 +95,27 @@ public class MySqlIterativeImporter implements EventListener, Runnable {
 				break;
 			case STRING:
 				if (!(values[i] instanceof byte[])) {
-					throw new RuntimeException("Expected string to be represented as a byte array");
+					throw new RuntimeException(
+							"Expected string to be represented as a byte array");
 				}
 				// TODO: Character sets and stuff
 				values[i] = new String((byte[]) values[i]);
 				break;
 			default:
-				throw new RuntimeException("Unknown schema type: " + schema.getColumns()[i].getColumnType());
+				throw new RuntimeException("Unknown schema type: "
+						+ schema.getColumns()[i].getColumnType());
 			}
 		}
 	}
 
-	private void processRowChange(Long tableId, BitSet includedColsBeforeUpdate, BitSet includedCols, Row oldRow, Row newRow) {
+	private void processRowChange(Long tableId,
+			BitSet includedColsBeforeUpdate, BitSet includedCols, Row oldRow,
+			Row newRow) {
 		MySqlTableSchema schema = schemaMap.get(tableId);
 		if (schema == null) {
 			// TODO: Where do exceptions in the event loop go?
-			throw new IllegalStateException("No table schema entry for " + tableId);
+			throw new IllegalStateException("No table schema entry for "
+					+ tableId);
 		}
 		String database = schema.getDatabaseName();
 		String table = schema.getTableName();
@@ -118,18 +124,23 @@ public class MySqlIterativeImporter implements EventListener, Runnable {
 		// This is default in MySQL.
 		// TODO: Add support for other modes.
 		if (includedColsBeforeUpdate != null
-				&& includedColsBeforeUpdate.cardinality() != includedColsBeforeUpdate.length()) {
-			throw new IllegalStateException("Expected all columns to be included");
+				&& includedColsBeforeUpdate.cardinality() != includedColsBeforeUpdate
+						.length()) {
+			throw new IllegalStateException(
+					"Expected all columns to be included");
 		}
 		if (includedCols != null
 				&& includedCols.cardinality() != includedCols.length()) {
-			throw new IllegalStateException("Expected all columns to be included");
+			throw new IllegalStateException(
+					"Expected all columns to be included");
 		}
 		coerceLogRowTypes(schema, oldRow);
 		coerceLogRowTypes(schema, newRow);
 
-		processor.process(schema, oldRow, newRow, new MySqlStreamPosition(client.getBinlogFilename(), client.getBinlogPosition()));
-		// System.out.println("RC " + database + "." + table + " -> " + oldRow + " : " + newRow);
+		processor.process(schema, oldRow, newRow, new MySqlStreamPosition(
+				client.getBinlogFilename(), client.getBinlogPosition()));
+		// System.out.println("RC " + database + "." + table + " -> " + oldRow +
+		// " : " + newRow);
 	}
 
 	@Override
@@ -137,20 +148,27 @@ public class MySqlIterativeImporter implements EventListener, Runnable {
 		switch (event.getHeader().getEventType()) {
 		case EXT_WRITE_ROWS:
 			WriteRowsEventData wrEvent = (WriteRowsEventData) event.getData();
-			for (Serializable[] row: wrEvent.getRows()) {
-				processRowChange(wrEvent.getTableId(), null, wrEvent.getIncludedColumns(), null, new Row(row));
+			for (Serializable[] row : wrEvent.getRows()) {
+				processRowChange(wrEvent.getTableId(), null,
+						wrEvent.getIncludedColumns(), null, new Row(row));
 			}
 			break;
 		case EXT_UPDATE_ROWS:
 			UpdateRowsEventData urEvent = (UpdateRowsEventData) event.getData();
-			for (Entry<Serializable[], Serializable[]> rowChange: urEvent.getRows()) {
-				processRowChange(urEvent.getTableId(), urEvent.getIncludedColumnsBeforeUpdate(), urEvent.getIncludedColumns(), new Row(rowChange.getKey()), new Row(rowChange.getValue()));
+			for (Entry<Serializable[], Serializable[]> rowChange : urEvent
+					.getRows()) {
+				processRowChange(urEvent.getTableId(),
+						urEvent.getIncludedColumnsBeforeUpdate(),
+						urEvent.getIncludedColumns(),
+						new Row(rowChange.getKey()),
+						new Row(rowChange.getValue()));
 			}
 			break;
 		case EXT_DELETE_ROWS:
 			DeleteRowsEventData drEvent = (DeleteRowsEventData) event.getData();
-			for (Serializable[] row: drEvent.getRows()) {
-				processRowChange(drEvent.getTableId(), drEvent.getIncludedColumns(), null, new Row(row), null);
+			for (Serializable[] row : drEvent.getRows()) {
+				processRowChange(drEvent.getTableId(),
+						drEvent.getIncludedColumns(), null, new Row(row), null);
 			}
 			break;
 		case TABLE_MAP:
@@ -158,17 +176,21 @@ public class MySqlIterativeImporter implements EventListener, Runnable {
 			if (!schemaMap.containsKey(tmData.getTableId())) {
 				MySqlTableSchema schema;
 				try {
-					schema = MySqlTableSchema.readTableSchemaFromConnection(schemaConn, tmData.getDatabase(), tmData.getTable());
+					schema = MySqlTableSchema
+							.readTableSchemaFromConnection(schemaConn,
+									tmData.getDatabase(), tmData.getTable());
 				} catch (SQLException e) {
 					throw new RuntimeException(e);
 				}
 
 				// TODO: Check column types vs. schema
 				if (schema.getColumns().length != tmData.getColumnTypes().length) {
-					throw new RuntimeException("Got table map event " + tmData + " that doesn't match retrieved schema " + schema);
+					throw new RuntimeException("Got table map event " + tmData
+							+ " that doesn't match retrieved schema " + schema);
 				}
 
-				System.out.println("Adding schema map data for " + tmData.getTableId() + " -> " + schema);
+				System.out.println("Adding schema map data for "
+						+ tmData.getTableId() + " -> " + schema);
 				schemaMap.put(tmData.getTableId(), schema);
 			}
 			break;
@@ -178,7 +200,9 @@ public class MySqlIterativeImporter implements EventListener, Runnable {
 		}
 	}
 
-	public static void main(String[] args) throws IOException, SQLException, InstantiationException, IllegalAccessException, ClassNotFoundException {
+	public static void main(String[] args) throws IOException, SQLException,
+			InstantiationException, IllegalAccessException,
+			ClassNotFoundException {
 		Class.forName("com.mysql.jdbc.Driver").newInstance();
 		Connection conn = DriverManager.getConnection(
 				"jdbc:mysql://localhost/chute_test"
@@ -187,7 +211,8 @@ public class MySqlIterativeImporter implements EventListener, Runnable {
 
 		MySqlStreamPosition pos = new MySqlStreamPosition(false);
 		MySqlIterativeImporter importer = new MySqlIterativeImporter(
-				"localhost", 3306, "root", "test", pos, conn, new PrintingStreamProcessor());
+				"localhost", 3306, "root", "test", pos, conn,
+				new PrintingStreamProcessor());
 		importer.run();
 	}
 }

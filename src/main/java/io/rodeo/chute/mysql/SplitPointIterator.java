@@ -1,19 +1,19 @@
 package io.rodeo.chute.mysql;
 
 /*
-Copyright 2016 Fred Wulff
+ Copyright 2016 Fred Wulff
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+ http://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
  */
 
 import io.rodeo.chute.Key;
@@ -34,17 +34,18 @@ public class SplitPointIterator implements Iterator<Key> {
 
 	private Object[] nextSplitPoint = null;
 
-	public SplitPointIterator(MySqlTableSchema schema, int batchSize, Connection connection) throws SQLException {
+	public SplitPointIterator(MySqlTableSchema schema, int batchSize,
+			Connection connection) throws SQLException {
 		this.batchSize = batchSize;
 
 		String primaryKeyList = schema.getCommaDelimitedPrimaryKeyColumns();
 		String primaryKeyParameterList = schema.getPrimaryKeyParameterList();
 
-		String initialSplitSql = "SELECT " + primaryKeyList + " FROM " + schema.getTableName() +
-				" LIMIT 1 OFFSET ?";
-		String splitSql = "SELECT " + primaryKeyList + " FROM " + schema.getTableName() +
-				" WHERE (" + primaryKeyList + ") >= (" + primaryKeyParameterList +
-				") LIMIT 1 OFFSET ?";
+		String initialSplitSql = "SELECT " + primaryKeyList + " FROM "
+				+ schema.getTableName() + " LIMIT 1 OFFSET ?";
+		String splitSql = "SELECT " + primaryKeyList + " FROM "
+				+ schema.getTableName() + " WHERE (" + primaryKeyList
+				+ ") >= (" + primaryKeyParameterList + ") LIMIT 1 OFFSET ?";
 		initialSplitStmt = connection.prepareStatement(initialSplitSql);
 		splitStmt = connection.prepareStatement(splitSql);
 
