@@ -29,7 +29,7 @@ import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class MySqlFullImporter {
+public class MySqlFullSplitImporter {
 	private static void fillPreparedStatementFromArray(PreparedStatement stmt,
 			int startPosition, Object[] arr) throws SQLException {
 		for (int i = 0; i < arr.length; i++) {
@@ -94,7 +94,7 @@ public class MySqlFullImporter {
 	private final MySqlTableSchema schema;
 	private int batchSize;
 
-	public MySqlFullImporter(MySqlTableSchema schema, int batchSize) {
+	public MySqlFullSplitImporter(MySqlTableSchema schema, int batchSize) {
 		this.schema = schema;
 		this.batchSize = batchSize;
 	}

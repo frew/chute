@@ -16,7 +16,7 @@ import java.util.concurrent.Semaphore;
 class MySqlFullTableImportManager implements Runnable {
 	public final MySqlTableSchema schema;
 	public final Map<Split, SplitFullImportState> fullImportStates;
-	public final MySqlFullImporter importer;
+	public final MySqlFullSplitImporter importer;
 	public final StreamProcessor processor;
 	private ConnectionManager connManager;
 	private final Semaphore concurrentImportSemaphore;
@@ -27,7 +27,7 @@ class MySqlFullTableImportManager implements Runnable {
 			Semaphore concurrentImportSemaphore, int epoch, int batchSize) {
 		this.schema = schema;
 		this.fullImportStates = new HashMap<Split, SplitFullImportState>();
-		this.importer = new MySqlFullImporter(schema, batchSize);
+		this.importer = new MySqlFullSplitImporter(schema, batchSize);
 		this.processor = processor;
 		this.connManager = connManager;
 		this.concurrentImportSemaphore = concurrentImportSemaphore;
