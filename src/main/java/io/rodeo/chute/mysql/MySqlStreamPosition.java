@@ -37,6 +37,8 @@ import io.rodeo.chute.StreamPosition;
  * TODO: Currently we don't support GTID yet.
  */
 public class MySqlStreamPosition implements StreamPosition {
+	private static final int POSITION_MIN_LENGTH = 12;
+
 	// Incremented each time the server is changed
 	private int epoch;
 
@@ -50,10 +52,10 @@ public class MySqlStreamPosition implements StreamPosition {
 	}
 
 	public MySqlStreamPosition(byte[] positionBytes) {
-		if (positionBytes.length < 12) {
+		if (positionBytes.length < POSITION_MIN_LENGTH) {
 			throw new IllegalArgumentException(
-					"MySQL position must be at least 16 bytes, but was "
-							+ positionBytes.length);
+					"MySQL position must be at least " + POSITION_MIN_LENGTH
+							+ " bytes, but was " + positionBytes.length);
 		}
 		ByteBuffer buf = ByteBuffer.wrap(positionBytes);
 		this.epoch = buf.getInt();
