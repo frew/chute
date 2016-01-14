@@ -18,12 +18,12 @@ class MySqlFullTableImportManager implements Runnable {
 	public final Map<Split, SplitFullImportState> fullImportStates;
 	public final MySqlFullSplitImporter importer;
 	public final StreamProcessor processor;
-	private ConnectionManager connManager;
+	private JdbcConnectionManager connManager;
 	private final Semaphore concurrentImportSemaphore;
 	private final int epoch;
 
 	public MySqlFullTableImportManager(MySqlTableSchema schema,
-			StreamProcessor processor, ConnectionManager connManager,
+			StreamProcessor processor, JdbcConnectionManager connManager,
 			Semaphore concurrentImportSemaphore, int epoch, int batchSize) {
 		this.schema = schema;
 		this.fullImportStates = new HashMap<Split, SplitFullImportState>();
@@ -45,8 +45,8 @@ class MySqlFullTableImportManager implements Runnable {
 		}
 		fullImportStates.put(new Split(previousSplitPoint, null),
 				SplitFullImportState.NOT_STARTED);
-		System.out.println("Initialized " + fullImportStates.size()
-				+ " splits");
+		System.out
+				.println("Initialized " + fullImportStates.size() + " splits");
 	}
 
 	private Split getSplitToRun() {

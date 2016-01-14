@@ -1,18 +1,20 @@
 importers:
-	test_mysql:
-		type: mysql
-		host: localhost
-		user: root
-		password: test
-		batch_size: 10000
-		epoch: 0
-		concurrent_full_imports: 5
-		
+  test_mysql:
+    type: mysql
+    host: localhost
+    port: 3306
+    user: root
+    password: test
+    database: chute_test
+    batch_size: 10000
+    epoch: 0
+    concurrent_full_imports: 5
+
 exporters:
-	test_bigquery:
-		type: bigquery
+  test_bigquery:
+    type: bigquery
 
 connections:
-	mysql_bigquery:
-		in: test_mysql
-		out: test_bigquery
+  mysql_bigquery:
+    in: test_mysql
+    out: test_bigquery

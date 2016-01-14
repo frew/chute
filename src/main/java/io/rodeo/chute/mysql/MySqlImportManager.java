@@ -16,70 +16,98 @@ package io.rodeo.chute.mysql;
  limitations under the License.
  */
 
+import io.rodeo.chute.ImportManager;
 import io.rodeo.chute.StreamProcessor;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.Semaphore;
 
-public class MySqlImportManager {
+import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.SafeConstructor;
+
+public class MySqlImportManager implements ImportManager {
 	public static enum SplitFullImportState {
 		NOT_STARTED, RUNNING, DONE
 	}
 
-	private static final int BATCH_SIZE = 10000;
-	private static final int SIMULTANEOUS_FULL_IMPORTS = 5;
-
-	private final Semaphore activeFullImports = new Semaphore(
-			SIMULTANEOUS_FULL_IMPORTS);
-
-	private final ConnectionManager connManager;
+	private final JdbcConnectionManager connManager;
 	private final StreamProcessor processor;
 	private final int epoch;
 	private final List<MySqlFullTableImportManager> fullImportManagers;
+	private final String host;
+	private final int port;
+	private final String user;
+	private final String password;
+	private final String database;
+	private final int batchSize;
+	private final int concurrentFullImports;
 
-	public MySqlImportManager(List<MySqlTableSchema> schemas,
-			StreamProcessor processor, int epoch, ConnectionManager connManager) {
+	private final Semaphore activeFullImports;
+
+	public MySqlImportManager(StreamProcessor processor, int epoch,
+			String host, int port, String user, String password,
+			String database, int batchSize, int concurrentFullImports) {
 		this.fullImportManagers = new ArrayList<MySqlFullTableImportManager>();
 		this.processor = processor;
 		this.epoch = epoch;
-		this.connManager = connManager;
-		for (MySqlTableSchema schema : schemas) {
-			this.fullImportManagers.add(new MySqlFullTableImportManager(schema,
-					processor, connManager, activeFullImports, epoch, BATCH_SIZE));
-		}
-
+		this.host = host;
+		this.port = port;
+		this.user = user;
+		this.password = password;
+		this.database = database;
+		this.batchSize = batchSize;
+		this.concurrentFullImports = concurrentFullImports;
+		this.activeFullImports = new Semaphore(this.concurrentFullImports);
+		this.connManager = new JdbcConnectionManager(host, port, user,
+				password, database);
 	}
 
-	public void start() throws SQLException {
-		Connection itConn = connManager.createConnection();
+	@Override
+	public void start() {
+		Connection schemaConn;
+		try {
+			schemaConn = connManager.createConnection();
+			List<String> tables = MySqlTableSchema.readTablesFromConnection(
+					schemaConn, database);
+			List<MySqlTableSchema> schemas = new ArrayList<MySqlTableSchema>();
+			for (String tableName : tables) {
+				schemas.add(MySqlTableSchema.readTableSchemaFromConnection(
+						schemaConn, database, tableName));
+			}
+			for (MySqlTableSchema schema : schemas) {
+				this.fullImportManagers.add(new MySqlFullTableImportManager(
+						schema, processor, connManager, activeFullImports,
+						epoch, batchSize));
+			}
+			connManager.returnConnection(schemaConn);
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
+
+		Connection itConn;
+		try {
+			itConn = connManager.createConnection();
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
 		MySqlStreamPosition pos = new MySqlStreamPosition(epoch, "", 4);
-		MySqlIterativeImporter importer = new MySqlIterativeImporter(
-				"localhost", 3306, "root", "test", pos, itConn, processor);
+		MySqlIterativeImporter importer = new MySqlIterativeImporter(host,
+				port, user, password, pos, itConn, processor);
 		new Thread(importer).start();
 
 		for (MySqlFullTableImportManager manager : fullImportManagers) {
 			new Thread(manager).start();
 		}
-	}
-
-	public static void main(String[] args) throws SQLException {
-		ConnectionManager connManager = new ConnectionManager();
-		Connection schemaConn = connManager.createConnection();
-		List<String> tables = MySqlTableSchema.readTablesFromConnection(
-				schemaConn, "chute_test");
-		List<MySqlTableSchema> schemas = new ArrayList<MySqlTableSchema>();
-		for (String tableName : tables) {
-			schemas.add(MySqlTableSchema.readTableSchemaFromConnection(
-					schemaConn, "chute_test", tableName));
-		}
-		StreamProcessor processor = new CountPrintingStreamProcessor(1000);
-		int currentEpoch = 0;
-		MySqlImportManager manager = new MySqlImportManager(schemas, processor,
-				currentEpoch, connManager);
-		manager.start();
-		System.out.println("Importers started");
 	}
 }

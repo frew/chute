@@ -20,12 +20,27 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
-// TODO: Config
-public class ConnectionManager {
+public class JdbcConnectionManager {
+	private final String host;
+	private final int port;
+	private final String user;
+	private final String password;
+	private final String database;
+
+	public JdbcConnectionManager(String host, int port, String user,
+			String password, String database) {
+		this.host = host;
+		this.port = port;
+		this.user = user;
+		this.password = password;
+		this.database = database;
+	}
+
 	public Connection createConnection() throws SQLException {
-		return DriverManager.getConnection("jdbc:mysql://localhost/chute_test"
+		return DriverManager.getConnection("jdbc:mysql://" + host + ":" + port
+				+ "/" + database
 		// + "?profileSQL=true"
-				, "root", "test");
+				, user, password);
 	}
 
 	public void returnConnection(Connection conn) throws SQLException {
