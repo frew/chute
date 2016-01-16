@@ -13,6 +13,9 @@ importers:
 exporters:
   test_bigquery:
     type: bigquery
+    application_name: BigQuery Test
+    project_id: boostthesignalapp
+    dataset_id: test
 
 connections:
   mysql_bigquery:

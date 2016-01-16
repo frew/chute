@@ -1,5 +1,6 @@
 package io.rodeo.chute;
 
+import io.rodeo.chute.bigquery.BigQueryExportManager;
 import io.rodeo.chute.mysql.CountPrintingStreamProcessor;
 import io.rodeo.chute.mysql.MySqlImportManager;
 
@@ -55,6 +56,59 @@ public class ChuteMain {
 				config.get("importers"), "importers");
 		System.out.println("Got " + importerConfigs.size() + " importers");
 
+		Map<String, ImportManager> importers = processImporterConfigs(importerConfigs);
+
+		Map<String, Object> exporterConfigs = getMapping(
+				config.get("exporters"), "exporters");
+		System.out.println("Got " + exporterConfigs.size() + " exporters");
+
+		Map<String, ExportManager> exporters = processExporterConfigs(exporterConfigs);
+
+		for (ImportManager importManager : importers.values()) {
+			importManager.start();
+		}
+		/*
+		 * ConnectionManager connManager = new ConnectionManager();
+		 * 
+		 * StreamProcessor processor = new CountPrintingStreamProcessor(1000);
+		 * int currentEpoch = 0; MySqlImportManager manager = new
+		 * MySqlImportManager(schemas, processor, currentEpoch, connManager);
+		 * manager.start(); System.out.println("Importers started");
+		 */
+	}
+
+	private static Map<String, ExportManager> processExporterConfigs(
+			Map<String, Object> exporterConfigs) {
+		Map<String, ExportManager> exporters = new HashMap<String, ExportManager>();
+		for (Entry<String, Object> exporterConfigEntry : exporterConfigs
+				.entrySet()) {
+			String exporterId = exporterConfigEntry.getKey();
+			Map<String, Object> exporterConfig = getMapping(
+					exporterConfigEntry.getValue(), exporterId);
+			String exporterType = getString(exporterConfig.get("type"),
+					exporterId + ".type");
+			switch (exporterType) {
+			case "bigquery":
+				String applicationName = getString(
+						exporterConfig.get("application_name"), exporterId
+								+ ".application_name");
+				String projectId = getString(exporterConfig.get("project_id"),
+						exporterId + ".project_id");
+				String datasetId = getString(exporterConfig.get("dataset_id"),
+						exporterId + ".dataset_id");
+				exporters.put(exporterId, new BigQueryExportManager(
+						applicationName, projectId, datasetId));
+				break;
+			default:
+				throw new IllegalArgumentException("Exporter " + exporterId
+						+ " has unknown type " + exporterType);
+			}
+		}
+		return exporters;
+	}
+
+	private static Map<String, ImportManager> processImporterConfigs(
+			Map<String, Object> importerConfigs) {
 		Map<String, ImportManager> importers = new HashMap<String, ImportManager>();
 		for (Entry<String, Object> importerConfigEntry : importerConfigs
 				.entrySet()) {
@@ -92,21 +146,6 @@ public class ChuteMain {
 						+ " has unknown type " + importerType);
 			}
 		}
-
-		Map<String, Object> exporterConfigs = getMapping(
-				config.get("exporters"), "exporters");
-		System.out.println("Got " + exporterConfigs.size() + " exporters");
-
-		for (ImportManager importManager : importers.values()) {
-			importManager.start();
-		}
-		/*
-		 * ConnectionManager connManager = new ConnectionManager();
-		 * 
-		 * StreamProcessor processor = new CountPrintingStreamProcessor(1000);
-		 * int currentEpoch = 0; MySqlImportManager manager = new
-		 * MySqlImportManager(schemas, processor, currentEpoch, connManager);
-		 * manager.start(); System.out.println("Importers started");
-		 */
+		return importers;
 	}
 }
