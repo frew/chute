@@ -20,4 +20,6 @@ public interface TableSchema {
 	public ColumnSchema[] getColumns();
 
 	public int[] getPrimaryKeyColumnOffsets();
+
+	public String getTableId();
 }

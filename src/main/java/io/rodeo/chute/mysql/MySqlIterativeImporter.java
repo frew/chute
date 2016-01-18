@@ -25,8 +25,10 @@ import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -47,18 +49,18 @@ public class MySqlIterativeImporter implements EventListener, Runnable {
 	private BinaryLogClient client;
 	private MySqlStreamPosition position;
 	private Connection schemaConn;
-	private StreamProcessor processor;
+	private final List<StreamProcessor> processors;
 
 	public MySqlIterativeImporter(String host, int port, String user,
 			String password, MySqlStreamPosition position,
-			Connection schemaConn, StreamProcessor processor) {
+			Connection schemaConn, List<StreamProcessor> processors) {
 		this.host = host;
 		this.port = port;
 		this.user = user;
 		this.password = password;
 		this.position = position;
 		this.schemaConn = schemaConn;
-		this.processor = processor;
+		this.processors = processors;
 	}
 
 	@Override
@@ -140,7 +142,9 @@ public class MySqlIterativeImporter implements EventListener, Runnable {
 		coerceLogRowTypes(schema, oldRow);
 		coerceLogRowTypes(schema, newRow);
 
-		processor.process(schema, oldRow, newRow, position);
+		for (StreamProcessor processor : processors) {
+			processor.process(schema, oldRow, newRow, position);
+		}
 		// System.out.println("RC " + database + "." + table + " -> " + oldRow +
 		// " : " + newRow);
 	}
@@ -212,9 +216,10 @@ public class MySqlIterativeImporter implements EventListener, Runnable {
 				, "root", "test");
 
 		MySqlStreamPosition pos = new MySqlStreamPosition(0, "", 4);
+		List<StreamProcessor> processors = new ArrayList<StreamProcessor>();
+		processors.add(new PrintingStreamProcessor());
 		MySqlIterativeImporter importer = new MySqlIterativeImporter(
-				"localhost", 3306, "root", "test", pos, conn,
-				new PrintingStreamProcessor());
+				"localhost", 3306, "root", "test", pos, conn, processors);
 		importer.run();
 	}
 }

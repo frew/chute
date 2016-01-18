@@ -27,6 +27,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class MySqlFullSplitImporter {
@@ -108,15 +109,15 @@ public class MySqlFullSplitImporter {
 		private final Connection conn;
 		private final int epoch;
 		private final Split split;
-		private final StreamProcessor processor;
+		private final List<StreamProcessor> processors;
 		private final Runnable cb;
 
 		public FullImporterRunnable(Connection conn, int epoch, Split split,
-				StreamProcessor processor, Runnable cb) {
+				List<StreamProcessor> processors, Runnable cb) {
 			this.conn = conn;
 			this.epoch = epoch;
 			this.split = split;
-			this.processor = processor;
+			this.processors = processors;
 			this.cb = cb;
 		}
 
@@ -138,7 +139,9 @@ public class MySqlFullSplitImporter {
 
 				while (rowIt.hasNext()) {
 					Row row = rowIt.next();
-					processor.process(schema, null, row, pos);
+					for (StreamProcessor processor : processors) {
+						processor.process(schema, null, row, pos);
+					}
 				}
 			} catch (SQLException e) {
 				// TODO: Less disruptive handling
@@ -150,7 +153,8 @@ public class MySqlFullSplitImporter {
 	}
 
 	public FullImporterRunnable createImporterRunnable(Connection conn,
-			int epoch, Split split, StreamProcessor processor, Runnable cb) {
-		return new FullImporterRunnable(conn, epoch, split, processor, cb);
+			int epoch, Split split, List<StreamProcessor> processors,
+			Runnable cb) {
+		return new FullImporterRunnable(conn, epoch, split, processors, cb);
 	}
 }

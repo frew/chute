@@ -49,6 +49,12 @@ public class MySqlTableSchema implements TableSchema {
 		return tableName;
 	}
 
+	// TODO: Should probably have option to include database name as well
+	@Override
+	public String getTableId() {
+		return getTableName();
+	}
+
 	@Override
 	public ColumnSchema[] getColumns() {
 		return columns;

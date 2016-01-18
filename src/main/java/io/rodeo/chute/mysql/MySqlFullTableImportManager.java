@@ -9,6 +9,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Semaphore;
@@ -17,18 +18,19 @@ class MySqlFullTableImportManager implements Runnable {
 	public final MySqlTableSchema schema;
 	public final Map<Split, SplitFullImportState> fullImportStates;
 	public final MySqlFullSplitImporter importer;
-	public final StreamProcessor processor;
+	public final List<StreamProcessor> processors;
 	private JdbcConnectionManager connManager;
 	private final Semaphore concurrentImportSemaphore;
 	private final int epoch;
 
 	public MySqlFullTableImportManager(MySqlTableSchema schema,
-			StreamProcessor processor, JdbcConnectionManager connManager,
+			List<StreamProcessor> processors,
+			JdbcConnectionManager connManager,
 			Semaphore concurrentImportSemaphore, int epoch, int batchSize) {
 		this.schema = schema;
 		this.fullImportStates = new HashMap<Split, SplitFullImportState>();
 		this.importer = new MySqlFullSplitImporter(schema, batchSize);
-		this.processor = processor;
+		this.processors = processors;
 		this.connManager = connManager;
 		this.concurrentImportSemaphore = concurrentImportSemaphore;
 		this.epoch = epoch;
@@ -70,7 +72,8 @@ class MySqlFullTableImportManager implements Runnable {
 	}
 
 	private void startFullImport(final Split split, final Connection conn,
-			final int epoch, StreamProcessor processor) throws SQLException {
+			final int epoch, List<StreamProcessor> processors)
+			throws SQLException {
 		setFullImportRunning(split);
 		Runnable doneCb = new Runnable() {
 			@Override
@@ -85,7 +88,7 @@ class MySqlFullTableImportManager implements Runnable {
 			}
 		};
 		Runnable r = importer.createImporterRunnable(conn, epoch, split,
-				processor, doneCb);
+				processors, doneCb);
 		new Thread(r).start();
 	}
 
@@ -99,7 +102,7 @@ class MySqlFullTableImportManager implements Runnable {
 
 			while ((split = getSplitToRun()) != null) {
 				Connection conn = connManager.createConnection();
-				startFullImport(split, conn, epoch, processor);
+				startFullImport(split, conn, epoch, processors);
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();

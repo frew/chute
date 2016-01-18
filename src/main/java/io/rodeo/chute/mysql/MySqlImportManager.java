@@ -42,7 +42,7 @@ public class MySqlImportManager implements ImportManager {
 	}
 
 	private final JdbcConnectionManager connManager;
-	private final StreamProcessor processor;
+	private final List<StreamProcessor> processors;
 	private final int epoch;
 	private final List<MySqlFullTableImportManager> fullImportManagers;
 	private final String host;
@@ -55,11 +55,11 @@ public class MySqlImportManager implements ImportManager {
 
 	private final Semaphore activeFullImports;
 
-	public MySqlImportManager(StreamProcessor processor, int epoch,
-			String host, int port, String user, String password,
-			String database, int batchSize, int concurrentFullImports) {
+	public MySqlImportManager(int epoch, String host, int port, String user,
+			String password, String database, int batchSize,
+			int concurrentFullImports) {
 		this.fullImportManagers = new ArrayList<MySqlFullTableImportManager>();
-		this.processor = processor;
+		this.processors = new ArrayList<StreamProcessor>();
 		this.epoch = epoch;
 		this.host = host;
 		this.port = port;
@@ -87,7 +87,7 @@ public class MySqlImportManager implements ImportManager {
 			}
 			for (MySqlTableSchema schema : schemas) {
 				this.fullImportManagers.add(new MySqlFullTableImportManager(
-						schema, processor, connManager, activeFullImports,
+						schema, processors, connManager, activeFullImports,
 						epoch, batchSize));
 			}
 			connManager.returnConnection(schemaConn);
@@ -103,11 +103,16 @@ public class MySqlImportManager implements ImportManager {
 		}
 		MySqlStreamPosition pos = new MySqlStreamPosition(epoch, "", 4);
 		MySqlIterativeImporter importer = new MySqlIterativeImporter(host,
-				port, user, password, pos, itConn, processor);
+				port, user, password, pos, itConn, processors);
 		new Thread(importer).start();
 
 		for (MySqlFullTableImportManager manager : fullImportManagers) {
 			new Thread(manager).start();
 		}
+	}
+
+	@Override
+	public void addProcessor(StreamProcessor processor) {
+		processors.add(processor);
 	}
 }

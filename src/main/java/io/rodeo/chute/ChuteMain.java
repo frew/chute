@@ -64,9 +64,20 @@ public class ChuteMain {
 
 		Map<String, ExportManager> exporters = processExporterConfigs(exporterConfigs);
 
+		Map<String, Object> connectionConfigs = getMapping(
+				config.get("connections"), "connections");
+		System.out.println("Got " + connectionConfigs.size() + " connections");
+
+		processConnectionConfigs(connectionConfigs, importers, exporters);
+
+		for (ExportManager exportManager : exporters.values()) {
+			exportManager.start();
+		}
+
 		for (ImportManager importManager : importers.values()) {
 			importManager.start();
 		}
+
 		/*
 		 * ConnectionManager connManager = new ConnectionManager();
 		 * 
@@ -75,6 +86,35 @@ public class ChuteMain {
 		 * MySqlImportManager(schemas, processor, currentEpoch, connManager);
 		 * manager.start(); System.out.println("Importers started");
 		 */
+	}
+
+	private static void processConnectionConfigs(
+			Map<String, Object> connectionConfigs,
+			Map<String, ImportManager> importers,
+			Map<String, ExportManager> exporters) {
+		for (Entry<String, Object> connectionConfigEntry : connectionConfigs
+				.entrySet()) {
+			String connectionId = connectionConfigEntry.getKey();
+			Map<String, Object> connectionConfig = getMapping(
+					connectionConfigEntry.getValue(), connectionId);
+			String importerId = getString(connectionConfig.get("in"),
+					connectionId + ".in");
+			String exporterId = getString(connectionConfig.get("out"),
+					connectionId + ".out");
+			ImportManager importer = importers.get(importerId);
+			if (importer == null) {
+				throw new IllegalArgumentException("Couldn't find importer "
+						+ importerId + " from connection " + connectionId);
+			}
+			ExportManager exporter = exporters.get(exporterId);
+			if (exporter == null) {
+				throw new IllegalArgumentException("Couldn't find exporter "
+						+ exporterId + " from connection " + connectionId);
+			}
+			importer.addProcessor(exporter);
+			System.out.println("Connected " + importerId + " to " + exporterId
+					+ " for " + connectionId);
+		}
 	}
 
 	private static Map<String, ExportManager> processExporterConfigs(
@@ -136,8 +176,8 @@ public class ChuteMain {
 				int concurrentFullImports = getInt(
 						importerConfig.get("concurrent_full_imports"),
 						importerId + ".concurrent_full_imports");
-				importers.put(importerId, new MySqlImportManager(
-						new CountPrintingStreamProcessor(1000), epoch, host,
+				// new CountPrintingStreamProcessor(1000)
+				importers.put(importerId, new MySqlImportManager(epoch, host,
 						port, user, password, database, batchSize,
 						concurrentFullImports));
 				break;
