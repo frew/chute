@@ -1,5 +1,12 @@
 package io.rodeo.chute.bigquery;
 
+import io.rodeo.chute.ColumnSchema;
+import io.rodeo.chute.ColumnType;
+import io.rodeo.chute.ExportManager;
+import io.rodeo.chute.Row;
+import io.rodeo.chute.StreamPosition;
+import io.rodeo.chute.TableSchema;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,26 +30,15 @@ import com.google.api.services.bigquery.model.TableFieldSchema;
 import com.google.api.services.bigquery.model.TableList;
 import com.google.api.services.bigquery.model.TableReference;
 
-import io.rodeo.chute.ColumnSchema;
-import io.rodeo.chute.ColumnType;
-import io.rodeo.chute.ExportManager;
-import io.rodeo.chute.Row;
-import io.rodeo.chute.StreamPosition;
-import io.rodeo.chute.TableSchema;
-
 public class BigQueryExportManager implements ExportManager {
-	private final String projectId;
-	private final String datasetId;
-
+	private final BigQueryExporterConfiguration config;
 	private final Set<String> checkedSchemas;
 	private final Map<String, com.google.api.services.bigquery.model.TableSchema> existingSchemaMap;
 
 	private final Bigquery bq;
 
-	public BigQueryExportManager(String applicationName, String projectId,
-			String datasetId) {
-		this.projectId = projectId;
-		this.datasetId = datasetId;
+	public BigQueryExportManager(BigQueryExporterConfiguration config) {
+		this.config = config;
 		this.checkedSchemas = new HashSet<String>();
 		this.existingSchemaMap = new HashMap<String, com.google.api.services.bigquery.model.TableSchema>();
 
@@ -59,7 +55,7 @@ public class BigQueryExportManager implements ExportManager {
 			credential = credential.createScoped(BigqueryScopes.all());
 		}
 		this.bq = new Bigquery.Builder(transport, jsonFactory, credential)
-				.setApplicationName(applicationName).build();
+				.setApplicationName(this.config.applicationName).build();
 	}
 
 	@Override
@@ -67,7 +63,8 @@ public class BigQueryExportManager implements ExportManager {
 		try {
 			String pageToken = null;
 			do {
-				Tables.List listReq = bq.tables().list(projectId, datasetId);
+				Tables.List listReq = bq.tables().list(config.projectId,
+						config.datasetId);
 				if (pageToken != null) {
 					listReq.setPageToken(pageToken);
 				}
@@ -76,7 +73,8 @@ public class BigQueryExportManager implements ExportManager {
 				for (TableList.Tables table : list.getTables()) {
 					String tableId = table.getTableReference().getTableId();
 					Table tableResource = bq.tables()
-							.get(projectId, datasetId, tableId).execute();
+							.get(config.projectId, config.datasetId, tableId)
+							.execute();
 					existingSchemaMap.put(tableId, tableResource.getSchema());
 				}
 			} while (pageToken != null);
@@ -135,14 +133,18 @@ public class BigQueryExportManager implements ExportManager {
 					tableResource.setId(schema.getTableId());
 					tableResource.setSchema(bqSchema);
 					TableReference reference = new TableReference();
-					reference.setProjectId(projectId);
-					reference.setDatasetId(datasetId);
+					reference.setProjectId(config.projectId);
+					reference.setDatasetId(config.datasetId);
 					reference.setTableId(schema.getTableId());
 					tableResource.setTableReference(reference);
 					try {
-						existingSchemaMap.put(schema.getTableId(), bq.tables()
-								.insert(projectId, datasetId, tableResource)
-								.execute().getSchema());
+						existingSchemaMap
+								.put(schema.getTableId(),
+										bq.tables()
+												.insert(config.projectId,
+														config.datasetId,
+														tableResource)
+												.execute().getSchema());
 						checkedSchemas.add(schema.getTableId());
 					} catch (IOException e) {
 						throw new RuntimeException(e);
@@ -174,8 +176,8 @@ public class BigQueryExportManager implements ExportManager {
 			rowsList.add(rows);
 			req.setRows(rowsList);
 			bq.tabledata()
-					.insertAll(projectId, datasetId, schema.getTableId(), req)
-					.execute();
+					.insertAll(config.projectId, config.datasetId,
+							schema.getTableId(), req).execute();
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}

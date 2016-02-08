@@ -19,58 +19,32 @@ package io.rodeo.chute.mysql;
 import io.rodeo.chute.ImportManager;
 import io.rodeo.chute.StreamProcessor;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.Semaphore;
-
-import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 public class MySqlImportManager implements ImportManager {
 	public static enum SplitFullImportState {
 		NOT_STARTED, RUNNING, DONE
 	}
 
+	private final MySqlImporterConfiguration config;
 	private final JdbcConnectionManager connManager;
 	private final List<StreamProcessor> processors;
-	private final int epoch;
 	private final List<MySqlFullTableImportManager> fullImportManagers;
-	private final String host;
-	private final int port;
-	private final String user;
-	private final String password;
-	private final String database;
-	private final int batchSize;
-	private final int concurrentFullImports;
 
 	private final Semaphore activeFullImports;
 
-	public MySqlImportManager(int epoch, String host, int port, String user,
-			String password, String database, int batchSize,
-			int concurrentFullImports) {
+	public MySqlImportManager(MySqlImporterConfiguration config) {
 		this.fullImportManagers = new ArrayList<MySqlFullTableImportManager>();
 		this.processors = new ArrayList<StreamProcessor>();
-		this.epoch = epoch;
-		this.host = host;
-		this.port = port;
-		this.user = user;
-		this.password = password;
-		this.database = database;
-		this.batchSize = batchSize;
-		this.concurrentFullImports = concurrentFullImports;
-		this.activeFullImports = new Semaphore(this.concurrentFullImports);
-		this.connManager = new JdbcConnectionManager(host, port, user,
-				password, database);
+		this.config = config;
+		this.activeFullImports = new Semaphore(
+				this.config.concurrentFullImports);
+		this.connManager = new JdbcConnectionManager(config.host, config.port,
+				config.user, config.password, config.database);
 	}
 
 	@Override
@@ -79,16 +53,16 @@ public class MySqlImportManager implements ImportManager {
 		try {
 			schemaConn = connManager.createConnection();
 			List<String> tables = MySqlTableSchema.readTablesFromConnection(
-					schemaConn, database);
+					schemaConn, config.database);
 			List<MySqlTableSchema> schemas = new ArrayList<MySqlTableSchema>();
 			for (String tableName : tables) {
 				schemas.add(MySqlTableSchema.readTableSchemaFromConnection(
-						schemaConn, database, tableName));
+						schemaConn, config.database, tableName));
 			}
 			for (MySqlTableSchema schema : schemas) {
 				this.fullImportManagers.add(new MySqlFullTableImportManager(
 						schema, processors, connManager, activeFullImports,
-						epoch, batchSize));
+						config.epoch, config.batchSize));
 			}
 			connManager.returnConnection(schemaConn);
 		} catch (SQLException e) {
@@ -101,9 +75,10 @@ public class MySqlImportManager implements ImportManager {
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
-		MySqlStreamPosition pos = new MySqlStreamPosition(epoch, "", 4);
-		MySqlIterativeImporter importer = new MySqlIterativeImporter(host,
-				port, user, password, pos, itConn, processors);
+		MySqlStreamPosition pos = new MySqlStreamPosition(config.epoch, "", 4);
+		MySqlIterativeImporter importer = new MySqlIterativeImporter(
+				config.host, config.port, config.user, config.password, pos,
+				itConn, processors);
 		new Thread(importer).start();
 
 		for (MySqlFullTableImportManager manager : fullImportManagers) {

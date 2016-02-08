@@ -16,9 +16,9 @@ package io.rodeo.chute.mysql;
  limitations under the License.
  */
 
-import java.nio.ByteBuffer;
-
 import io.rodeo.chute.StreamPosition;
+
+import java.nio.ByteBuffer;
 
 /*-
  * Represents a position in the replication stream. For MySQL there are
