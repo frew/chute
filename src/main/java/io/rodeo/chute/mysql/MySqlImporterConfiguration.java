@@ -1,6 +1,6 @@
 package io.rodeo.chute.mysql;
 
-import io.rodeo.chute.ImportManager;
+import io.rodeo.chute.Importer;
 import io.rodeo.chute.ImporterConfiguration;
 
 public class MySqlImporterConfiguration extends ImporterConfiguration {
@@ -13,7 +13,7 @@ public class MySqlImporterConfiguration extends ImporterConfiguration {
 	public int epoch;
 	public int concurrentFullImports;
 
-	public ImportManager createImporter() {
-		return new MySqlImportManager(this);
+	public Importer createImporter() {
+		return new MySqlImporter(this);
 	}
 }

@@ -3,7 +3,7 @@ package io.rodeo.chute.mysql;
 import io.rodeo.chute.Key;
 import io.rodeo.chute.Split;
 import io.rodeo.chute.StreamProcessor;
-import io.rodeo.chute.mysql.MySqlImportManager.SplitFullImportState;
+import io.rodeo.chute.mysql.MySqlImporter.SplitFullImportState;
 
 import java.sql.Connection;
 import java.sql.SQLException;

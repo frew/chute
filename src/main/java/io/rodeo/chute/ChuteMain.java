@@ -25,7 +25,7 @@ public class ChuteMain {
 		mapper.setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
 		ChuteConfiguration config = mapper.readValue(is,
 				ChuteConfiguration.class);
-		Map<String, ImportManager> importManagers = new HashMap<String, ImportManager>(
+		Map<String, Importer> importManagers = new HashMap<String, Importer>(
 				config.importerConfigurations.size());
 		for (Entry<String, ImporterConfiguration> importerConfig : config.importerConfigurations
 				.entrySet()) {
@@ -50,7 +50,7 @@ public class ChuteMain {
 			exportManager.getValue().start();
 		}
 
-		for (Entry<String, ImportManager> importManager : importManagers
+		for (Entry<String, Importer> importManager : importManagers
 				.entrySet()) {
 			importManager.getValue().start();
 		}

@@ -16,7 +16,7 @@ package io.rodeo.chute.mysql;
  limitations under the License.
  */
 
-import io.rodeo.chute.ImportManager;
+import io.rodeo.chute.Importer;
 import io.rodeo.chute.StreamProcessor;
 
 import java.sql.Connection;
@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
-public class MySqlImportManager implements ImportManager {
+public class MySqlImporter implements Importer {
 	public static enum SplitFullImportState {
 		NOT_STARTED, RUNNING, DONE
 	}
@@ -37,7 +37,7 @@ public class MySqlImportManager implements ImportManager {
 
 	private final Semaphore activeFullImports;
 
-	public MySqlImportManager(MySqlImporterConfiguration config) {
+	public MySqlImporter(MySqlImporterConfiguration config) {
 		this.fullImportManagers = new ArrayList<MySqlFullTableImportManager>();
 		this.processors = new ArrayList<StreamProcessor>();
 		this.config = config;

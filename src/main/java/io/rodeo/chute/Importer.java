@@ -1,6 +1,6 @@
 package io.rodeo.chute;
 
-public interface ImportManager {
+public interface Importer {
 	public void start();
 
 	// Must be called before start()
