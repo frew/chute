@@ -17,6 +17,9 @@ package io.rodeo.chute;
  */
 
 public interface StreamProcessor {
+	// Accepts a row delta. May be called from multiple threads.
+	// May be called with the same StreamPosition multiple
+	// times - should handle deduplication.
 	public void process(TableSchema schema, Row oldRow, Row newRow,
 			StreamPosition pos);
 }
