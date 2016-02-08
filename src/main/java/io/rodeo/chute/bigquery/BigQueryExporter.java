@@ -30,14 +30,14 @@ import com.google.api.services.bigquery.model.TableFieldSchema;
 import com.google.api.services.bigquery.model.TableList;
 import com.google.api.services.bigquery.model.TableReference;
 
-public class BigQueryExportManager implements Exporter {
+public class BigQueryExporter implements Exporter {
 	private final BigQueryExporterConfiguration config;
 	private final Set<String> checkedSchemas;
 	private final Map<String, com.google.api.services.bigquery.model.TableSchema> existingSchemaMap;
 
 	private final Bigquery bq;
 
-	public BigQueryExportManager(BigQueryExporterConfiguration config) {
+	public BigQueryExporter(BigQueryExporterConfiguration config) {
 		this.config = config;
 		this.checkedSchemas = new HashSet<String>();
 		this.existingSchemaMap = new HashMap<String, com.google.api.services.bigquery.model.TableSchema>();

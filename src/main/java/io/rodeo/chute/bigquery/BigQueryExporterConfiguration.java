@@ -9,6 +9,6 @@ public class BigQueryExporterConfiguration extends ExporterConfiguration {
 	public String datasetId;
 
 	public Exporter createExporter() {
-		return new BigQueryExportManager(this);
+		return new BigQueryExporter(this);
 	}
 }
