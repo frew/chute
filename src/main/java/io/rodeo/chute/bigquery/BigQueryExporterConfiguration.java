@@ -1,6 +1,6 @@
 package io.rodeo.chute.bigquery;
 
-import io.rodeo.chute.ExportManager;
+import io.rodeo.chute.Exporter;
 import io.rodeo.chute.ExporterConfiguration;
 
 public class BigQueryExporterConfiguration extends ExporterConfiguration {
@@ -8,7 +8,7 @@ public class BigQueryExporterConfiguration extends ExporterConfiguration {
 	public String projectId;
 	public String datasetId;
 
-	public ExportManager createExporter() {
+	public Exporter createExporter() {
 		return new BigQueryExportManager(this);
 	}
 }

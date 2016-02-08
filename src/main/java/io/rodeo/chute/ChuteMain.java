@@ -32,7 +32,7 @@ public class ChuteMain {
 			importManagers.put(importerConfig.getKey(), importerConfig
 					.getValue().createImporter());
 		}
-		Map<String, ExportManager> exportManagers = new HashMap<String, ExportManager>(
+		Map<String, Exporter> exportManagers = new HashMap<String, Exporter>(
 				config.exporterConfigurations.size());
 		for (Entry<String, ExporterConfiguration> exporterConfig : config.exporterConfigurations
 				.entrySet()) {
@@ -45,7 +45,7 @@ public class ChuteMain {
 					exportManagers.get(connectionConfig.getValue().out));
 		}
 
-		for (Entry<String, ExportManager> exportManager : exportManagers
+		for (Entry<String, Exporter> exportManager : exportManagers
 				.entrySet()) {
 			exportManager.getValue().start();
 		}

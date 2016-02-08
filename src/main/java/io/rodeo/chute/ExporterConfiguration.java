@@ -8,5 +8,5 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({ @JsonSubTypes.Type(value = BigQueryExporterConfiguration.class, name = "bigquery") })
 public abstract class ExporterConfiguration {
-	public abstract ExportManager createExporter();
+	public abstract Exporter createExporter();
 }

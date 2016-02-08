@@ -2,7 +2,7 @@ package io.rodeo.chute.bigquery;
 
 import io.rodeo.chute.ColumnSchema;
 import io.rodeo.chute.ColumnType;
-import io.rodeo.chute.ExportManager;
+import io.rodeo.chute.Exporter;
 import io.rodeo.chute.Row;
 import io.rodeo.chute.StreamPosition;
 import io.rodeo.chute.TableSchema;
@@ -30,7 +30,7 @@ import com.google.api.services.bigquery.model.TableFieldSchema;
 import com.google.api.services.bigquery.model.TableList;
 import com.google.api.services.bigquery.model.TableReference;
 
-public class BigQueryExportManager implements ExportManager {
+public class BigQueryExportManager implements Exporter {
 	private final BigQueryExporterConfiguration config;
 	private final Set<String> checkedSchemas;
 	private final Map<String, com.google.api.services.bigquery.model.TableSchema> existingSchemaMap;
