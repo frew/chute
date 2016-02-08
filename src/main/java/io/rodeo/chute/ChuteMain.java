@@ -55,11 +55,6 @@ public class ChuteMain {
 			exportManagers.put(exporterConfig.getKey(), exporterConfig
 					.getValue().createExporter());
 		}
-		for (Entry<String, ConnectionConfiguration> connectionConfig : config.connectionConfigurations
-				.entrySet()) {
-			importManagers.get(connectionConfig.getValue().in).addProcessor(
-					exportManagers.get(connectionConfig.getValue().out));
-		}
 
 		for (Entry<String, Exporter> exportManager : exportManagers
 				.entrySet()) {

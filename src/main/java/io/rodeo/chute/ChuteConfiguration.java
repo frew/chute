@@ -26,7 +26,4 @@ public class ChuteConfiguration {
 
 	@JsonProperty("exporters")
 	public Map<String, ExporterConfiguration> exporterConfigurations;
-
-	@JsonProperty("connections")
-	public Map<String, ConnectionConfiguration> connectionConfigurations;
 }

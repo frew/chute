@@ -16,8 +16,3 @@ exporters:
     application_name: BigQuery Test
     project_id: boostthesignalapp
     dataset_id: test
-
-connections:
-  mysql_bigquery:
-    in: test_mysql
-    out: test_bigquery
