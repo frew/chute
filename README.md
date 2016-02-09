@@ -6,8 +6,11 @@ Chute is designed to be an incremental loader for data from a primary datastore 
 
 Important classes include:
 **Importer** - Reads from a datasource and writes each delta event to a StreamProcessor for processing. **MySqlImporter** includes support for reading both changes from the binary log, and creating synthetic deltas to effect a full dumpusing a JDBC reader.
+
 **StreamProcessor** - an interface that process delta events.
-**Exporter** - A StreamProcessor that exports the deltas to a data warehouse. **BigQueryExproter** currently supports outputting inserts, but not updates or deletes.
+
+**Exporter** - A StreamProcessor that exports the deltas to a data warehouse. **BigQueryExporter** currently supports outputting inserts, but not updates or deletes.
+
 **Row** and **Schema** - defines a common abstraction for a SQL-style row and schema. 
 
 **chute.yaml** holds the configuration parameters for importers and exporters - the example one in the repo contains examples of all available paramaters.
