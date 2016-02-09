@@ -5,6 +5,7 @@
 Chute is designed to be an incremental loader for data from a primary datastore (e.g. MySQL, App Engine Datastore) to data warehouses (e.g. Redshift, BigQuery). Similar to [Sqoop](http://sqoop.apache.org/) but relying on incremental changelog updates rather than repeated full database dumps.
 
 Important classes include:
+
 **Importer** - Reads from a datasource and writes each delta event to a StreamProcessor for processing. **MySqlImporter** includes support for reading both changes from the binary log, and creating synthetic deltas to effect a full dumpusing a JDBC reader.
 
 **StreamProcessor** - an interface that process delta events.
